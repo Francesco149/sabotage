@@ -1,0 +1,15 @@
+[mirrors]
+https://github.com/cdown/clipmenu/archive/3.2.0.tar.gz
+
+[vars]
+filesize=5426
+sha512=74ac2eb76b6acc43f93b27f67717c0486d362bfc12d23ccff92cc919d898ef36c21ea2ba68e01a56c419e66e117c78a1bd21c1ed7b037c0d1272780740fc25cc
+tardir=clipmenu-3.2.0
+
+[deps]
+xsel
+
+[build]
+patch -p1 < "$K"/clipmenu-busybox.patch
+install -Dm 755 clipmenu "$butch_install_dir""$butch_prefix"/bin/clipmenu
+install -Dm 755 clipmenud "$butch_install_dir""$butch_prefix"/bin/clipmenud
