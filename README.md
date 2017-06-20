@@ -1,3 +1,7 @@
+These are my personal tweaks for sabotage, go to
+https://github.com/sabotage-linux/sabotage
+to learn more about this distro.
+
 # Sabotage Linux
 
 This is Sabotage, an experimental distribution based on musl libc and busybox.
