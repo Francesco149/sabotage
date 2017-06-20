@@ -1,0 +1,26 @@
+diff --git a/clipmenud b/opt/clipmenu/bin/clipmenud
+index ad35888..4c2a34e 100755
+--- a/clipmenud
++++ b/opt/clipmenu/bin/clipmenud
+@@ -11,7 +11,7 @@ lock_timeout=2
+ : "${CM_DEBUG=0}"
+ 
+ _xsel() {
+-    timeout 1 xsel --logfile /dev/stderr "$@"
++    timeout -t 1 xsel --logfile /dev/stderr "$@"
+ }
+ 
+ get_first_line() {
+@@ -61,7 +61,10 @@ declare -A last_filename
+ exec {lock_fd}> "$lock_file"
+ 
+ while sleep "${CM_SLEEP:-0.5}"; do
+-    if ! flock -x -w "$lock_timeout" "$lock_fd"; then
++    timeout -t "$lock_timeout" flock -x "$lock_fd"
++    result=$?
++
++    if [[ $result -ne 0 ]]; then
+         if (( CM_ONESHOT )); then
+             printf 'ERROR: %s\n' 'Timed out waiting for lock' >&2
+             exit 1
+
