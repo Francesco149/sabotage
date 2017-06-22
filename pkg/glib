@@ -35,7 +35,8 @@ CFLAGS="-D_GNU_SOURCE -D_BSD_SOURCE -Dloff_t=off_t $optcflags" \
 LDFLAGS="$optldflags" ./configure -C $xconfflags \
   --prefix="$butch_prefix" --disable-modular-tests --disable-selinux --disable-fam \
   --disable-silent-rules glib_cv_stack_grows=no glib_cv_uscore=no \
-  ac_cv_func_posix_getpwuid_r=yes ac_cv_func_posix_getgrgid_r=yes
+  ac_cv_func_posix_getpwuid_r=yes ac_cv_func_posix_getgrgid_r=yes \
+  --enable-static
 
 echo '#include <string.h>' >> config.h
 
