@@ -20,7 +20,7 @@ printf "all:\n\ttrue\n\ninstall:\n\ttrue\n\n" > tests/Makefile.in
 CFLAGS="$optcflags -D_GNU_SOURCE" LDFLAGS="$optldflags" \
 ./configure -C --prefix="$butch_prefix" $xconfflags \
   --disable-glibtest --disable-silent-rules --enable-gtk-doc-html=no \
-  --enable-introspection=no
+  --enable-introspection=no --enable-static
 
 for i in po ; do
         printf 'all:\n\ttrue\ninstall:\n\ttrue\nclean:\n\ttrue\n' > "$i"/Makefile
