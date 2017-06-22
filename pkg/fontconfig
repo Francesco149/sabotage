@@ -26,7 +26,7 @@ rm src/fcobjshash.gperf
 CFLAGS="-D_GNU_SOURCE $optcflags" \
 LDFLAGS="$optldflags" \
   ./configure -C --prefix="$butch_prefix" $xconfflags \
-	--disable-docs \
+	--disable-docs --enable-static \
 	
 make -j$MAKE_THREADS V=1
 make DESTDIR="$butch_install_dir" install
