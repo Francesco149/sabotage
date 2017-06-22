@@ -35,6 +35,7 @@ for p in $(cat "$K"/kernel.patches) ; do
 done
 
 dopatch linux-timeconst-nobc.patch
+patch -p1 < "$K"/kernel-pitcairn-disable-quirks.patch
 
 # force reproducible build
 sed -i Makefile -e 's/--build-id/--build-id=none/g'
