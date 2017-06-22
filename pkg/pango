@@ -24,7 +24,9 @@ cp "$K"/pango-querymodules.c pango/querymodules.c
 CFLAGS="$optcflags -D_GNU_SOURCE" LDFLAGS="$optldflags" \
 CXXFLAGS="$optcflags" \
 ./configure -C --prefix="$butch_prefix" $xconfflags \
-  --enable-introspection=no FREETYPE_LIBS=-lfreetype
+  --enable-introspection=no --enable-static \
+  --with-included-modules \
+  FREETYPE_LIBS=-lfreetype
 
 [ -n "$CROSS_COMPILE" ] && "$K"/libtool.cross.gen --sysroot="$butch_root_dir"
 
