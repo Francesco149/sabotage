@@ -1,0 +1,42 @@
+[vars]
+desc='upload files and shorten URLs on multiple services'
+
+[deps]
+go
+git
+scrot
+gtk+2
+
+[build]
+# warning: golang executables are massive (10+mb)
+#
+# commands that I usually bind to hotkeys:
+# sharenix-window
+# sharenix-section
+# sharenix -m="c" -n (clipboard)
+#
+# see sharenix -h for more info
+#
+# to add custom uploaders copy /etc/sharenix.json to
+# ~/.sharenix.json and edit it.
+# format is the same as: https://getsharex.com/docs/custom-uploader
+
+repo="github.com/Francesco149/sharenix"
+dest="$butch_install_dir""$butch_prefix"
+srcdest="$S"/build/"$butch_package_name"
+
+GOROOT="$butch_root_dir"/opt/go \
+GOPATH="$dest" \
+  go get --ldflags "-s -w" "$repo"
+
+install -Dm 755 "$dest/src/$repo/sharenix-window" \
+                "$dest/bin/sharenix-window"
+
+install -Dm 755 "$dest/src/$repo/sharenix-section" \
+                "$dest/bin/sharenix-section"
+
+install -Dm 644 "$dest/src/$repo/sharenix.json" \
+                "$dest/etc/sharenix.json"
+
+[ -d "$srcdest" ] && rm -rf "$srcdest"
+mv -f "$dest"/src "$srcdest"
