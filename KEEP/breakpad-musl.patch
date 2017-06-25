@@ -1,0 +1,196 @@
+diff --git a/src/client/linux/crash_generation/crash_generation_server.cc b/src/client/linux/crash_generation/crash_generation_server.cc
+index 26c50a5c..2596afde 100644
+--- a/src/client/linux/crash_generation/crash_generation_server.cc
++++ b/src/client/linux/crash_generation/crash_generation_server.cc
+@@ -28,7 +28,6 @@
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+ #include <assert.h>
+-#include <dirent.h>
+ #include <fcntl.h>
+ #include <limits.h>
+ #include <poll.h>
+@@ -49,6 +48,8 @@
+ #include "common/linux/guid_creator.h"
+ #include "common/linux/safe_readlink.h"
+ 
++#include <dirent.h>
++
+ static const char kCommandQuit = 'x';
+ 
+ namespace google_breakpad {
+diff --git a/src/client/linux/dump_writer_common/ucontext_reader.cc b/src/client/linux/dump_writer_common/ucontext_reader.cc
+index c80724dd..668fe3c6 100644
+--- a/src/client/linux/dump_writer_common/ucontext_reader.cc
++++ b/src/client/linux/dump_writer_common/ucontext_reader.cc
+@@ -49,7 +49,7 @@ uintptr_t UContextReader::GetInstructionPointer(const struct ucontext* uc) {
+ }
+ 
+ void UContextReader::FillCPUContext(RawContextCPU *out, const ucontext *uc,
+-                                    const struct _libc_fpstate* fp) {
++                                    const struct _fpstate* fp) {
+   const greg_t* regs = uc->uc_mcontext.gregs;
+ 
+   out->context_flags = MD_CONTEXT_X86_FULL |
+@@ -97,7 +97,7 @@ uintptr_t UContextReader::GetInstructionPointer(const struct ucontext* uc) {
+ }
+ 
+ void UContextReader::FillCPUContext(RawContextCPU *out, const ucontext *uc,
+-                                    const struct _libc_fpstate* fpregs) {
++                                    const struct _fpstate* fpregs) {
+   const greg_t* regs = uc->uc_mcontext.gregs;
+ 
+   out->context_flags = MD_CONTEXT_AMD64_FULL;
+diff --git a/src/client/linux/dump_writer_common/ucontext_reader.h b/src/client/linux/dump_writer_common/ucontext_reader.h
+index b6e77b4b..06ab8046 100644
+--- a/src/client/linux/dump_writer_common/ucontext_reader.h
++++ b/src/client/linux/dump_writer_common/ucontext_reader.h
+@@ -50,7 +50,7 @@ struct UContextReader {
+   //   info: the collection of register structures.
+ #if defined(__i386__) || defined(__x86_64)
+   static void FillCPUContext(RawContextCPU *out, const ucontext *uc,
+-                             const struct _libc_fpstate* fp);
++                             const struct _fpstate* fp);
+ #elif defined(__aarch64__)
+   static void FillCPUContext(RawContextCPU *out, const ucontext *uc,
+                              const struct fpsimd_context* fpregs);
+diff --git a/src/client/linux/handler/exception_handler.cc b/src/client/linux/handler/exception_handler.cc
+index 586d84e9..d16037f7 100644
+--- a/src/client/linux/handler/exception_handler.cc
++++ b/src/client/linux/handler/exception_handler.cc
+@@ -78,7 +78,7 @@
+ #include <sys/wait.h>
+ #include <unistd.h>
+ 
+-#include <sys/signal.h>
++#include <signal.h>
+ #include <sys/ucontext.h>
+ #include <sys/user.h>
+ #include <ucontext.h>
+diff --git a/src/client/linux/minidump_writer/minidump_writer.h b/src/client/linux/minidump_writer/minidump_writer.h
+index d1dc3312..d1cc5624 100644
+--- a/src/client/linux/minidump_writer/minidump_writer.h
++++ b/src/client/linux/minidump_writer/minidump_writer.h
+@@ -48,7 +48,7 @@ class ExceptionHandler;
+ #if defined(__aarch64__)
+ typedef struct fpsimd_context fpstate_t;
+ #elif !defined(__ARM_EABI__) && !defined(__mips__)
+-typedef struct _libc_fpstate fpstate_t;
++typedef struct _fpstate fpstate_t;
+ #endif
+ 
+ // These entries store a list of memory regions that the client wants included
+diff --git a/src/common/common.gyp b/src/common/common.gyp
+index 08772bf7..f69bfe8a 100644
+--- a/src/common/common.gyp
++++ b/src/common/common.gyp
+@@ -51,9 +51,7 @@
+         'android/include/elf.h',
+         'android/include/link.h',
+         'android/include/sgidefs.h',
+-        'android/include/stab.h',
+         'android/include/sys/procfs.h',
+-        'android/include/sys/signal.h',
+         'android/include/sys/user.h',
+         'android/include/ucontext.h',
+         'android/testing/include/wchar.h',
+diff --git a/src/common/dwarf/elf_reader.cc b/src/common/dwarf/elf_reader.cc
+index 4135a51a..bb58a5a1 100644
+--- a/src/common/dwarf/elf_reader.cc
++++ b/src/common/dwarf/elf_reader.cc
+@@ -33,6 +33,7 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <sys/mman.h>
++#include <sys/reg.h>
+ #include <unistd.h>
+ #include <fcntl.h>
+ #include <string.h>
+diff --git a/src/common/linux/dump_symbols.cc b/src/common/linux/dump_symbols.cc
+index d029ca14..2a2978ca 100644
+--- a/src/common/linux/dump_symbols.cc
++++ b/src/common/linux/dump_symbols.cc
+@@ -882,7 +882,7 @@ const char* ElfArchitecture(const typename ElfClass::Ehdr* elf_header) {
+ string BaseFileName(const string &filename) {
+   // Lots of copies!  basename's behavior is less than ideal.
+   char* c_filename = strdup(filename.c_str());
+-  string base = basename(c_filename);
++  string base = strrchr(c_filename, '/');
+   free(c_filename);
+   return base;
+ }
+diff --git a/src/common/linux/elf_core_dump.h b/src/common/linux/elf_core_dump.h
+index d03c7a88..02eb391c 100644
+--- a/src/common/linux/elf_core_dump.h
++++ b/src/common/linux/elf_core_dump.h
+@@ -36,6 +36,7 @@
+ #include <elf.h>
+ #include <link.h>
+ #include <stddef.h>
++#include <sys/reg.h>
+ 
+ #include "common/memory_range.h"
+ 
+diff --git a/src/common/stabs_reader.cc b/src/common/stabs_reader.cc
+index 6019fc7e..9562caab 100644
+--- a/src/common/stabs_reader.cc
++++ b/src/common/stabs_reader.cc
+@@ -34,7 +34,6 @@
+ #include "common/stabs_reader.h"
+ 
+ #include <assert.h>
+-#include <stab.h>
+ #include <string.h>
+ 
+ #include <string>
+diff --git a/src/common/stabs_reader.h b/src/common/stabs_reader.h
+index 98ee2dd5..09c2367c 100644
+--- a/src/common/stabs_reader.h
++++ b/src/common/stabs_reader.h
+@@ -59,6 +59,15 @@
+ #include <a.out.h>
+ #endif
+ 
++#undef N_NDF
++#define N_UNDF  0x00
++#define N_FUN   0x24
++#define N_SLINE 0x44
++#define N_SO    0x64
++#define N_LSYM  0x80
++#define N_BINCL 0x82
++#define N_SOL   0x84
++
+ #include <string>
+ #include <vector>
+ 
+diff --git a/src/tools/linux/md2core/minidump-2-core.cc b/src/tools/linux/md2core/minidump-2-core.cc
+index 6a9e28eb..af6697cc 100644
+--- a/src/tools/linux/md2core/minidump-2-core.cc
++++ b/src/tools/linux/md2core/minidump-2-core.cc
+@@ -133,7 +133,7 @@ Usage(int argc, const char* argv[]) {
+           "             lookups to be done in this directory rather than the filesystem\n"
+           "             layout as it exists in the crashing image.  This path should end\n"
+           "             with a slash if it's a directory.  e.g. /var/lib/breakpad/\n"
+-          "", basename(argv[0]));
++          "", strrchr(argv[0], '/'));
+ }
+ 
+ static void
+diff --git a/src/third_party/lss/linux_syscall_support.h b/src/third_party/lss/linux_syscall_support.h
+index cb3fac2..f8c31cf 100644
+--- a/src/third_party/lss/linux_syscall_support.h
++++ b/src/third_party/lss/linux_syscall_support.h
+@@ -1766,6 +1766,13 @@ struct kernel_statfs {
+ /* End of s390/s390x definitions                                             */
+ #endif
+ 
++#ifndef __NR_pread
++#define __NR_pread __NR_pread64
++#endif
++
++#ifndef __NR_pwrite
++#define __NR_pwrite __NR_pwrite64
++#endif
+ 
+ /* After forking, we must make sure to only call system calls.               */
+ #if defined(__BOUNDED_POINTERS__)

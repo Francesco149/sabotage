@@ -1,0 +1,34 @@
+[deps]
+git
+
+[build]
+dest="$S/build/$butch_package_name"
+repo=breakpad
+
+if [ -d "$dest" ] ; then
+    rm -rf "$dest"
+fi
+
+mkdir -p "$dest"
+cd "$dest"
+
+# TODO: add depot tools as a package without adding them to PATH
+# by default so they don't conflict with the GNU Common Lisp
+# Compiler
+git clone \
+  https://chromium.googlesource.com/chromium/tools/depot_tools.git \
+  || exit 1
+
+PATH="$(pwd)/depot_tools:$PATH"
+fetch $repo || exit 1
+
+cd src
+patch -p1 < "$K"/breakpad-musl.patch
+
+./configure --prefix=/
+make -j$MAKE_THREADS || exit 1
+make DESTDIR="$butch_install_dir" install || exit 1
+
+# TODO: what is the commonly used dir for licenses on sabotage?
+install -Dm644 LICENSE \
+  "$butch_install_dir$butch_prefix"/lib/breakpad/LICENSE
