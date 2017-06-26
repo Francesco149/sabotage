@@ -23,6 +23,12 @@ PATH="$(pwd)/depot_tools:$PATH"
 fetch $repo || exit 1
 
 cd src
+
+# TODO: base patches on stable releases (if there are any)
+git fetch origin 66856d617b6658ce09ef2bc1b15d457ab7b152b0 || exit 1
+git checkout -b patched FETCH_HEAD || exit 1
+gclient sync --with_branch_heads || exit 1
+
 patch -p1 < "$K"/breakpad-musl.patch
 
 ./configure --prefix=/
