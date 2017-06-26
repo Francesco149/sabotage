@@ -1,0 +1,37 @@
+[mirrors]
+https://launchpad.net/libappindicator/12.10/12.10.0/+download/libappindicator-12.10.0.tar.gz
+
+[vars]
+filesize=535562
+sha512=317a22a23c8ed84e74207b64b2e9683992d1fb7208176637a051dfe925974f966d1cfa31e650b45eaf839ab61641dee8fbebc8a07882a09b0dd766d88b8d5b9a
+pkgver=1
+[mirrors]
+
+[deps]
+libdbusmenu
+dbus-glib
+glib
+gtk+2
+python-pygtk
+python-pygobject
+
+[build]
+[ -n "$CROSS_COMPILE" ] && \
+  xconfflags="--host=$($CC -dumpmachine) \
+  --with-sysroot=$butch_root_dir"
+
+sed -i -e '/^MONO_REQUIRED_VERSION/s:=.*:=9999:' configure || exit 1
+
+CPPFLAGS="-D_GNU_SOURCE" CFLAGS="$optcflags" CXXFLAGS="$optcflags" \
+LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
+  ./configure \
+    -C --prefix="$butch_prefix" \
+    --disable-nls \
+    --disable-static \
+    --disable-introspection \
+    --with-gtk=2 \
+    $xconfflags
+
+#[ -n "$CROSS_COMPILE" ] && "$K"/libtool.cross.gen --sysroot="$butch_root_dir"
+
+make V=1 -j$MAKE_THREADS DESTDIR="$butch_install_dir" install
