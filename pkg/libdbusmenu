@@ -1,0 +1,55 @@
+[mirrors]
+https://launchpad.net/libdbusmenu/12.10/12.10.2/+download/libdbusmenu-12.10.2.tar.gz
+
+[vars]
+filesize=735730
+sha512=cf2e50dc3adbf35d0a4ccdd62a3efd9fae2d079b8d06e6522b70f077f89ac2cf72188e380f476e38d184b69549e90b801bf1e32174fa94bbe612dd52aec94496
+pkgver=1
+
+[deps]
+dbus-glib
+json-glib
+glib
+libxml2
+gtk+2
+
+[deps.host]
+intltool
+
+[build]
+#patch -p1 < "$K"/some.patch
+#cp -f "$K"/config.sub .
+[ -n "$CROSS_COMPILE" ] && \
+  xconfflags="--host=$($CC -dumpmachine) \
+  --with-sysroot=$butch_root_dir"
+
+# don't want to pull in gnome-doc-utils
+#sed 's|docs/.*"|"|g' -i configure || exit 1
+sed 's/gdu_cv_have_gdu=no/gdu_cv_have_gdu=yes/g' -i configure || exit 1
+sed "s/ac_init_help=/ac_init_help=;HAVE_VALGRIND_TRUE='#'/g" -i configure || exit 1
+
+# ignore deprecation warnings
+sed 's/-Werror//g' -i configure || exit 1
+
+patch -p1 < "$K"/libdbusmenu-gtk2-signal-fix.patch
+
+CPPFLAGS="-D_GNU_SOURCE" CFLAGS="$optcflags" CXXFLAGS="$optcflags" \
+LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
+  ./configure \
+    -C --prefix="$butch_prefix" \
+    --enable-gtk \
+    --enable-gtk-doc-html=no \
+    --with-gtk=2 \
+    --disable-static \
+    --disable-tests \
+    --disable-silent-rules \
+    --disable-scrollkeeper \
+    --disable-dumper \
+    --disable-introspection \
+    --disable-vala \
+    --disable-nls $xconfflags
+
+#[ -n "$CROSS_COMPILE" ] && "$K"/libtool.cross.gen --sysroot="$butch_root_dir"
+
+make V=1 -j$MAKE_THREADS
+make DESTDIR="$butch_install_dir" install
