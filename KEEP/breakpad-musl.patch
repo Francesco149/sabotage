@@ -55,18 +55,25 @@ index b6e77b4b..06ab8046 100644
    static void FillCPUContext(RawContextCPU *out, const ucontext *uc,
                               const struct fpsimd_context* fpregs);
 diff --git a/src/client/linux/handler/exception_handler.cc b/src/client/linux/handler/exception_handler.cc
-index 586d84e9..d16037f7 100644
+index 586d84e9..31846123 100644
 --- a/src/client/linux/handler/exception_handler.cc
 +++ b/src/client/linux/handler/exception_handler.cc
-@@ -78,7 +78,7 @@
+@@ -78,8 +78,14 @@
  #include <sys/wait.h>
  #include <unistd.h>
  
 -#include <sys/signal.h>
 +#include <signal.h>
  #include <sys/ucontext.h>
++
++int getcontext(struct __ucontext *) {
++    /* todo: implement alternative */
++    return 0;
++}
++
  #include <sys/user.h>
  #include <ucontext.h>
+ 
 diff --git a/src/client/linux/minidump_writer/minidump_writer.h b/src/client/linux/minidump_writer/minidump_writer.h
 index d1dc3312..d1cc5624 100644
 --- a/src/client/linux/minidump_writer/minidump_writer.h
