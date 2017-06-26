@@ -1,9 +1,10 @@
 [mirrors]
-http://www.cmake.org/files/v2.8/cmake-2.8.12.2.tar.gz
+http://www.cmake.org/files/v3.7/cmake-3.7.2.tar.gz
 
 [vars]
-filesize=6068231
-sha512=a0fe8f6305052ba7894a7d58aa30f97b4be1f52eb7de650273a704929a6fbe81c7cebfa6e68a18c9e7d62f7ed02c944f74c2974da9aacc70e2cb186e0a1be44d
+filesize=7361593
+sha512=b2ed0192e12267de19eb178c2dedc69d06fc33dfadd47efbe0ccf6969ad72d290fa4bff02861c379a8752337d67d2485d7e1ba947cb219f2e4041a53a195e88d
+pkgver=2
 desc='immensely bloated build tool mostly used by windows and C++ folks'
 
 [deps]
@@ -21,7 +22,10 @@ patch -p1 < "$K"/cmake-isystem.patch
 if [ -z "$CROSS_COMPILE" ] ; then
 CPPFLAGS="-D_GNU_SOURCE" CFLAGS="$optcflags" CXXFLAGS="$optcflags" \
 LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
-  ./configure --prefix="$butch_prefix"
+  ./configure \
+    --prefix="$butch_prefix" \
+    --system-libarchive
+
 make -j$MAKE_THREADS
 make DESTDIR="$butch_install_dir" install
 else
