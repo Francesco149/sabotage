@@ -11,11 +11,13 @@ index de24b3ed..0543bf34 100644
  #ifdef OS_MAC_OLD
  #include <libexif/exif-data.h>
  #endif // OS_MAC_OLD
-@@ -2269,6 +2271,7 @@ namespace {
+@@ -2269,6 +2271,9 @@ namespace {
  	void initMedia() {
  		if (!::monofont) {
  			QString family;
++#ifdef TELEGRAM_FT_MONOSPACE_OVERRIDE
 +			tryFontFamily(family, TELEGRAM_FT_MONOSPACE_OVERRIDE);
++#endif
  			tryFontFamily(family, qsl("Consolas"));
  			tryFontFamily(family, qsl("Liberation Mono"));
  			tryFontFamily(family, qsl("Menlo"));
@@ -32,14 +34,20 @@ index 04fad32b..54c9bb9d 100644
  namespace Fonts {
  namespace {
  
-@@ -70,8 +72,8 @@ bool LoadCustomFont(const QString &filePath, const QString &familyName, int flag
+@@ -70,8 +72,16 @@ bool LoadCustomFont(const QString &filePath, const QString &familyName, int flag
  }
  
  bool Started = false;
--QString OpenSansOverride;
--QString OpenSansSemiboldOverride;
++#ifdef TELEGRAM_FT_OVERRIDE
 +QString OpenSansOverride         = TELEGRAM_FT_OVERRIDE;
++#else
+ QString OpenSansOverride;
++#endif
++#ifdef TELEGRAM_FT_SEMIBOLD_OVERRIDE
 +QString OpenSansSemiboldOverride = TELEGRAM_FT_SEMIBOLD_OVERRIDE;
++#else
+ QString OpenSansSemiboldOverride;
++#endif
  
  } // namespace
  
