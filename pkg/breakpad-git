@@ -1,5 +1,7 @@
 [deps.host]
 git
+bash
+python
 
 [build]
 dest="$S/build/$butch_package_name"
@@ -15,6 +17,7 @@ cd "$dest"
 # TODO: add depot tools as a package without adding them to PATH
 # by default so they don't conflict with the GNU Common Lisp
 # Compiler
+# NOTE: bash and python are dependencies of depot_tools
 git clone \
   https://chromium.googlesource.com/chromium/tools/depot_tools.git \
   || exit 1
