@@ -1,0 +1,170 @@
+diff --git a/audio/AudioInput.cpp b/audio/AudioInput.cpp
+index 674b955..4039021 100644
+--- a/audio/AudioInput.cpp
++++ b/audio/AudioInput.cpp
+@@ -56,6 +56,7 @@ AudioInput *AudioInput::Create(std::string deviceID){
+ #endif
+ 	return new AudioInputWASAPI(deviceID);
+ #elif defined(__linux__)
++#ifndef LIBTGVOIP_WITHOUT_PULSE
+ 	if(AudioInputPulse::IsAvailable()){
+ 		AudioInputPulse* aip=new AudioInputPulse(deviceID);
+ 		if(!aip->IsInitialized())
+@@ -64,6 +65,7 @@ AudioInput *AudioInput::Create(std::string deviceID){
+ 			return aip;
+ 		LOGW("in: PulseAudio available but not working; trying ALSA");
+ 	}
++#endif
+ 	return new AudioInputALSA(deviceID);
+ #endif
+ }
+@@ -88,7 +90,7 @@ void AudioInput::EnumerateDevices(std::vector<AudioInputDevice>& devs){
+ 	}
+ #endif
+ 	AudioInputWASAPI::EnumerateDevices(devs);
+-#elif defined(__linux__) && !defined(__ANDROID__)
++#elif defined(__linux__) && !defined(__ANDROID__) && !defined(LIBTGVOIP_WITHOUT_PULSE)
+ 	if(!AudioInputPulse::IsAvailable() || !AudioInputPulse::EnumerateDevices(devs))
+ 		AudioInputALSA::EnumerateDevices(devs);
+ #endif
+diff --git a/audio/AudioOutput.cpp b/audio/AudioOutput.cpp
+index 4f5fdfa..eebff87 100644
+--- a/audio/AudioOutput.cpp
++++ b/audio/AudioOutput.cpp
+@@ -54,6 +54,7 @@ AudioOutput *AudioOutput::Create(std::string deviceID){
+ #endif
+ 	return new AudioOutputWASAPI(deviceID);
+ #elif defined(__linux__)
++#ifndef LIBTGVOIP_WITHOUT_PULSE
+ 	if(AudioOutputPulse::IsAvailable()){
+ 		AudioOutputPulse* aop=new AudioOutputPulse(deviceID);
+ 		if(!aop->IsInitialized())
+@@ -62,6 +63,7 @@ AudioOutput *AudioOutput::Create(std::string deviceID){
+ 			return aop;
+ 		LOGW("out: PulseAudio available but not working; trying ALSA");
+ 	}
++#endif
+ 	return new AudioOutputALSA(deviceID);
+ #endif
+ }
+@@ -102,7 +104,7 @@ void AudioOutput::EnumerateDevices(std::vector<AudioOutputDevice>& devs){
+ 	}
+ #endif
+ 	AudioOutputWASAPI::EnumerateDevices(devs);
+-#elif defined(__linux__) && !defined(__ANDROID__)
++#elif defined(__linux__) && !defined(__ANDROID__) && !defined(LIBTGVOIP_WITHOUT_PULSE)
+ 	if(!AudioOutputPulse::IsAvailable() || !AudioOutputPulse::EnumerateDevices(devs))
+ 		AudioOutputALSA::EnumerateDevices(devs);
+ #endif
+diff --git a/os/linux/AudioInputPulse.cpp b/os/linux/AudioInputPulse.cpp
+index cdd31aa..bc76b49 100644
+--- a/os/linux/AudioInputPulse.cpp
++++ b/os/linux/AudioInputPulse.cpp
+@@ -4,7 +4,7 @@
+ // you should have received with this source code distribution.
+ //
+ 
+-
++#ifndef LIBTGVOIP_WITHOUT_PULSE
+ #include <assert.h>
+ #include <dlfcn.h>
+ #include <unistd.h>
+@@ -331,3 +331,4 @@ void AudioInputPulse::DeviceEnumCallback(pa_context* ctx, const pa_source_info*
+ 	dev.displayName=std::string(info->description);
+ 	devs->push_back(dev);
+ }
++#endif //LIBTGVOIP_WITHOUT_PULSE
+diff --git a/os/linux/AudioInputPulse.h b/os/linux/AudioInputPulse.h
+index 3dd55ce..9921655 100644
+--- a/os/linux/AudioInputPulse.h
++++ b/os/linux/AudioInputPulse.h
+@@ -6,6 +6,7 @@
+ 
+ #ifndef LIBTGVOIP_AUDIOINPUTPULSE_H
+ #define LIBTGVOIP_AUDIOINPUTPULSE_H
++#ifndef LIBTGVOIP_WITHOUT_PULSE
+ 
+ #include "../../audio/AudioInput.h"
+ #include "../../threading.h"
+@@ -55,4 +56,5 @@ private:
+ 
+ #undef DECLARE_DL_FUNCTION
+ 
++#endif //LIBTGVOIP_WITHOUT_PULSE
+ #endif //LIBTGVOIP_AUDIOINPUTPULSE_H
+diff --git a/os/linux/AudioOutputPulse.cpp b/os/linux/AudioOutputPulse.cpp
+index facab10..9204514 100644
+--- a/os/linux/AudioOutputPulse.cpp
++++ b/os/linux/AudioOutputPulse.cpp
+@@ -4,7 +4,7 @@
+ // you should have received with this source code distribution.
+ //
+ 
+-
++#ifndef LIBTGVOIP_WITHOUT_PULSE
+ #include <assert.h>
+ #include <dlfcn.h>
+ #include <unistd.h>
+@@ -338,3 +338,4 @@ void AudioOutputPulse::DeviceEnumCallback(pa_context* ctx, const pa_sink_info* i
+ 	dev.displayName=std::string(info->description);
+ 	devs->push_back(dev);
+ }
++#endif //LIBTGVOIP_WITHOUT_PULSE
+diff --git a/os/linux/AudioOutputPulse.h b/os/linux/AudioOutputPulse.h
+index e2b7838..543586a 100644
+--- a/os/linux/AudioOutputPulse.h
++++ b/os/linux/AudioOutputPulse.h
+@@ -6,6 +6,7 @@
+ 
+ #ifndef LIBTGVOIP_AUDIOOUTPUTPULSE_H
+ #define LIBTGVOIP_AUDIOOUTPUTPULSE_H
++#ifndef LIBTGVOIP_WITHOUT_PULSE
+ 
+ #include "../../audio/AudioOutput.h"
+ #include "../../threading.h"
+@@ -51,4 +52,5 @@ private:
+ }
+ }
+ 
++#endif //LIBTGVOIP_WITHOUT_PULSE
+ #endif //LIBTGVOIP_AUDIOOUTPUTPULSE_H
+diff --git a/os/linux/PulseAudioLoader.cpp b/os/linux/PulseAudioLoader.cpp
+index d1008e9..3926ae1 100644
+--- a/os/linux/PulseAudioLoader.cpp
++++ b/os/linux/PulseAudioLoader.cpp
+@@ -4,6 +4,7 @@
+ // you should have received with this source code distribution.
+ //
+ 
++#ifndef LIBTGVOIP_WITHOUT_PULSE
+ #include "PulseAudioLoader.h"
+ #include <dlfcn.h>
+ #include "../../logging.h"
+@@ -117,4 +118,5 @@ void PulseAudioLoader::DecRef(){
+ 		dlclose(lib);
+ 		lib=NULL;
+ 	}
+-}
+\ No newline at end of file
++}
++#endif // LIBTGVOIP_WITHOUT_PULSE
+diff --git a/os/linux/PulseAudioLoader.h b/os/linux/PulseAudioLoader.h
+index aa34f09..4db878b 100644
+--- a/os/linux/PulseAudioLoader.h
++++ b/os/linux/PulseAudioLoader.h
+@@ -6,6 +6,7 @@
+ 
+ #ifndef LIBTGVOIP_PULSEAUDIOLOADER_H
+ #define LIBTGVOIP_PULSEAUDIOLOADER_H
++#ifndef LIBTGVOIP_WITHOUT_PULSE
+ 
+ #include <pulse/pulseaudio.h>
+ 
+@@ -106,4 +107,5 @@ private:
+ #define pa_operation_get_state PulseAudioLoader::_import_pa_operation_get_state
+ #endif
+ 
+-#endif // LIBTGVOIP_PULSEAUDIOLOADER_H
+\ No newline at end of file
++#endif // LIBTGVOIP_WITHOUT_PULSE
++#endif // LIBTGVOIP_PULSEAUDIOLOADER_H
