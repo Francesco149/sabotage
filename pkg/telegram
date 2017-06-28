@@ -10,7 +10,6 @@ tardir=tdesktop-1.1.7
 [deps]
 libappindicator
 libressl
-breakpad-git
 qt5
 openal
 libopus
@@ -156,8 +155,6 @@ CXXFLAGS="$optcflags" \
 cmake $xconfflags \
   -DCMAKE_INSTALL_PREFIX="$butch_prefix" \
   -DCMAKE_VERBOSE_MAKEFILE=ON \
-  -DBREAKPAD_INCLUDE_DIR="$butch_prefix/include/breakpad" \
-  -DBREAKPAD_LIBRARY_DIR="$butch_prefix/lib/libbreakpad_client.a" \
   ..
 make -j$MAKE_THREADS VERBOSE=1
 

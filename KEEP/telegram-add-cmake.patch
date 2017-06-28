@@ -1,6 +1,6 @@
 --- /dev/null	2017-05-13 21:16:42.822937665 +0700
 +++ b/Telegram/CMakeLists.txt	2017-05-14 05:50:30.737400259 +0700
-@@ -0,0 +1,163 @@
+@@ -0,0 +1,161 @@
 +cmake_minimum_required(VERSION 3.6)
 +
 +project(TelegramDesktop)
@@ -68,8 +68,6 @@
 +	BUILD_IN_SOURCE 1
 +)
 +
-+find_package(Breakpad REQUIRED)
-+
 +include(TelegramCodegenTools)
 +include(TelegramCodegen)
 +
@@ -117,7 +115,6 @@
 +    Threads::Threads
 +    OpenSSL::SSL
 +    OpenSSL::Crypto
-+    breakpad
 +    ${FFMPEG_LIBRARIES}
 +    ${OPUS_LIBRARIES}
 +    ${LIBVA_LIBRARIES}
@@ -156,6 +153,7 @@
 +
 +target_compile_definitions(Telegram PUBLIC
 +    Q_OS_LINUX64
++    TDESKTOP_DISABLE_CRASH_REPORTS
 +    TDESKTOP_DISABLE_UNITY_INTEGRATION
 +    TDESKTOP_DISABLE_AUTOUPDATE
 +    __STDC_FORMAT_MACROS)
@@ -165,29 +163,6 @@
 +install(TARGETS Telegram RUNTIME DESTINATION bin)
 +install(PROGRAMS ${CMAKE_SOURCE_DIR}/../lib/xdg/telegram-desktop.desktop DESTINATION share/applications)
 +
---- /dev/null
-+++ b/Telegram/cmake/FindBreakpad.cmake
-@@ -0,0 +1,20 @@
-+
-+find_path(BREAKPAD_INCLUDE_DIRS
-+    NAMES client/linux/handler/exception_handler.h
-+    PATHS
-+    ${BREAKPAD_INCLUDE_DIR})
-+
-+find_library(BREAKPAD_CLIENT_LIBRARY
-+    NAMES breakpad_client
-+    PATHS
-+    ${BREAKPAD_LIBRARY_DIR}
-+)
-+
-+find_package_handle_standard_args(Breakpad DEFAULT_MSG
-+    BREAKPAD_CLIENT_LIBRARY BREAKPAD_INCLUDE_DIRS)
-+
-+add_library(breakpad STATIC IMPORTED)
-+add_dependencies(breakpad breakpad_build)
-+
-+set_property(TARGET breakpad PROPERTY IMPORTED_LOCATION ${BREAKPAD_CLIENT_LIBRARY})
-+set_property(TARGET breakpad PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${BREAKPAD_INCLUDE_DIRS})
 --- /dev/null
 +++ b/Telegram/cmake/TelegramCodegen.cmake
 @@ -0,0 +1,63 @@
