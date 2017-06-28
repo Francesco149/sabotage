@@ -4,6 +4,12 @@ bash
 python
 
 [build]
+# WARNING: because musl lacks getcontext, breakpad's
+# functionality might be severely crippled.
+# you should only use this package as a stub for software that
+# absolutely want breakpad and it's not easy to patch it out
+# of them.
+
 dest="$S/build/$butch_package_name"
 repo=breakpad
 
