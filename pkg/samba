@@ -1,0 +1,52 @@
+[mirrors]
+http://download.samba.org/pub/samba/stable/samba-4.6.5.tar.gz
+
+[vars]
+filesize=21111639
+sha512=045d7288e164a0682e84a6cb1d1811c3469c656f6f2c58f73fa350d611ade689b9a108941ebca482abd7d4a636a95571e2e613fcc7dbdc3c516d6fb370c208cb
+pkgver=1
+
+[deps]
+popt
+
+[build]
+#patch -p1 < "$K"/some.patch
+#cp -f "$K"/config.sub .
+[ -n "$CROSS_COMPILE" ] && \
+  xconfflags="--host=$($CC -dumpmachine) \
+  --with-sysroot=$butch_root_dir"
+
+patch -p1 < "$K"/samba-getpwent_r.patch
+crappy_glibc_defines="-DNETDB_SUCCESS=0 -DNETDB_INTERNAL=-1"
+
+CPPFLAGS="-D_GNU_SOURCE" CFLAGS="$optcflags $crappy_glibc_defines" CXXFLAGS="$crappy_glibc_defines $optcflags" \
+LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
+  ./configure -C --prefix="$butch_prefix" $xconfflags \
+    --bundled-libraries=NONE,ntdb,roken,wind,hx509,asn1,heimbase,hcrypto,krb5,gssapi,heimntlm,hdb,kdc,cmocka,talloc,tdb,pytalloc-util,tevent,pyldb-util \
+    --without-systemd \
+    --without-gettext \
+    --enable-gnutls \
+    --without-ads \
+    --without-ldap \
+    --disable-cups \
+    --disable-iprint \
+    --without-pam \
+    --without-quotas \
+    --without-sendfile-support \
+    --without-utmp \
+    --disable-avahi \
+    --without-iconv \
+    --without-acl-support \
+    --disable-glusterfs \
+    --disable-cephfs \
+    --with-winbind \
+    --disable-rpath-install
+
+# i actually have no idea which features are needed for wine ssl
+# todo: shave off stuff
+
+#[ -n "$CROSS_COMPILE" ] && "$K"/libtool.cross.gen --sysroot="$butch_root_dir"
+
+make V=1 -j$MAKE_THREADS
+make DESTDIR="$butch_install_dir" install
+
