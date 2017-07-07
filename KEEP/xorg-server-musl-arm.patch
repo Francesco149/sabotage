@@ -1,7 +1,7 @@
---- ./hw/xfree86/common/compiler.h.orig
-+++ ./hw/xfree86/common/compiler.h
-@@ -721,7 +721,7 @@
-                          :"r"(val), "r"(addr), "i"(ASI_PL));
+--- xorg-server-1.19.3/hw/xfree86/common/compiler.h
++++ xorg-server-1.19.3.patched/hw/xfree86/common/compiler.h
+@@ -518,7 +518,7 @@
+     barrier();
  }
  
 -#elif defined(__mips__) || (defined(__arm32__) && !defined(__linux__))
@@ -9,7 +9,7 @@
  #if defined(__arm32__) || defined(__mips64)
  #define PORT_SIZE long
  #else
-@@ -996,7 +996,7 @@
+@@ -758,7 +758,7 @@
      return xf86ReadMmio32Le((void *) ioBase, port);
  }
  

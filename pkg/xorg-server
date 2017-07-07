@@ -1,12 +1,15 @@
 [mirrors]
-ftp://ftp.x.org/pub/individual/xserver/xorg-server-1.16.3.tar.bz2
-http://ftp.x.org/pub/individual/xserver/xorg-server-1.16.3.tar.bz2
+http://ftp.x.org/pub/individual/xserver/xorg-server-1.19.3.tar.bz2
 
 [vars]
-filesize=5806406
-sha512=c0459ed95a6682b2094340b6b8fc7b59fcda5227ee2f13e87f68eb5c29b91cd3f05c5fc2126e33d6303beb3ad04d19466951ef4eb53f2e9918684cdaf3692c5a
+filesize=6050221
+sha512=b988897418399e1361fdcca9465a781f55f8f6fbfdc5a59edfaee9046a0c6ad7a76f348d88b6004ce3d3fb3966b4c5af0b854f6549c32b2b8d7a43758809f669
+pkgver=2
 
 [deps]
+fixesproto
+damageproto
+libepoxy
 util-macros
 pixman
 xorg-proto-headers
@@ -16,15 +19,14 @@ freetype
 libfontenc
 libxau
 libxdmcp
-libxfont
+libxfont2
 mesalib
 libressl
 
 [build]
 printf "all:\n\ttrue\n\ninstall:\n\ttrue\n\n" > test/Makefile.in
 sed -i 's/termio.h/termios.h/' hw/xfree86/os-support/xf86_OSlib.h
-patch -p0 < "$K"/xorg-server-musl-arm.patch
-patch -p1 < "$K"/xorg-server-gcc5.patch
+patch -p1 < "$K"/xorg-server-musl-arm.patch
 
 [ -n "$CROSS_COMPILE" ] && \
   xconfflags="--host=$($CC -dumpmachine) \
@@ -36,9 +38,11 @@ CPPFLAGS="-D__gid_t=gid_t -D__uid_t=uid_t -DNOFILES_MAX=256 -D_GNU_SOURCE \
 CFLAGS=" $optcflags" \
   ./configure -C --prefix="$butch_prefix" \
     --enable-kdrive --enable-kdrive-evdev $xconfflags \
-    --disable-xephyr
+    --disable-xephyr --disable-glamor
 make V=1 -j$MAKE_THREADS
 make DESTDIR="$butch_install_dir" install
+
+# TODO: fix glamor compile errors and enable it
 
 # make /etc/X11 a symlink to /share/X11, so the config can be found easily
 dest="${butch_prefix}${butch_install_dir}"
@@ -58,3 +62,4 @@ cp "$K"/20-modules.conf "$xmoddest"/
 for i in Xfbdev Xorg ; do
 	[ -e "$dest"/"$i" ] && chmod +s "$dest"/"$i"
 done
+
