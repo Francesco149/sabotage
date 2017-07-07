@@ -1,10 +1,10 @@
 [mirrors]
-https://github.com/anholt/libepoxy/releases/download/1.4.2/libepoxy-1.4.2.tar.xz
+https://github.com/anholt/libepoxy/releases/download/1.4.3/libepoxy-1.4.3.tar.xz
 
 [vars]
-filesize=781440
-sha512=32ec8307bce94909be8fd49f677310c1fa4039ccb17bde7799e58de69e48deb19cac641e42f0535bd3380fd0f5bc2bdfdce9dc10204345cdfc8815e2482f07f7
-pkgver=4
+filesize=783624
+sha512=f5d9fc74b062a0a90aea3abd7621ee4e2e27db359b82cacfbc8df64bceb4b7e4910755a078b46793b25e89d2e87ecb75556313dbad986aa4346f763dd43d2749
+pkgver=5
 
 [deps]
 libx11
@@ -20,7 +20,8 @@ python
 
 CPPFLAGS="-D_GNU_SOURCE" CFLAGS="$optcflags" CXXFLAGS="$optcflags" \
 LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
-  ./configure -C --prefix="$butch_prefix" --disable-nls $xconfflags
+  ./configure -C --prefix="$butch_prefix" --disable-nls $xconfflags \
+    --disable-shared --enable-static
 
 make V=1 -j$MAKE_THREADS
 make DESTDIR="$butch_install_dir" install
