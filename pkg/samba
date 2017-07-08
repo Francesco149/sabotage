@@ -13,6 +13,10 @@ gnutls
 [build]
 # at the moment, this package's only purpose is providing ntlm_auth for wine ssl support
 # other features are not tested and a lot of stuff is disabled
+#
+# UPDATE: actually, ssl appears to work even without samba's ntlm_auth, so I'm not
+#         quite sure if this will ever be of any use for wine, but I'll keep it just
+#         in case.
 
 [ -n "$CROSS_COMPILE" ] && \
   xconfflags="--host=$($CC -dumpmachine) \
