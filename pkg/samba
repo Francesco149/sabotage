@@ -8,6 +8,7 @@ pkgver=1
 
 [deps]
 popt
+gnutls
 
 [build]
 # at the moment, this package's only purpose is providing ntlm_auth for wine ssl support
