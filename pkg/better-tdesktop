@@ -1,10 +1,10 @@
 [mirrors]
-https://github.com/Francesco149/better-tdesktop/releases/download/v1.1.7-b0/better-tdesktop-v1.1.7-b0.tar.gz
+https://github.com/Francesco149/better-tdesktop/releases/download/v1.1.7-b1/better-tdesktop-v1.1.7-b1.tar.gz
 
 [vars]
-filesize=14929750
-sha512=ba4aae9e387d62570a21194b267b44191b5a3a85fae7a50e6d68690284686423c2298c43de5d39c56f2b0c1cbaa1aa903315e1ca10b65162449ac717b83024f2
-pkgver=1
+filesize=14929638
+sha512=ab0b92b1bd077fa254c44d76b88cff6d08e0f00c8b11688212e10b587032ba276878e447c08ba6a92bbb8a2a8bd28cd4f2ffecb48b0b6ee4906b0af247e304c9
+pkgver=2
 
 [deps]
 libappindicator
@@ -35,3 +35,4 @@ PREFIX="$butch_prefix" \
 DESTDIR="$butch_install_dir" \
   ./install.sh \
   || exit 1
+
