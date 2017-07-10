@@ -1,0 +1,19 @@
+[mirrors]
+http://ftp.gnome.org/pub/gnome/sources/gtk-engines/2.20/gtk-engines-2.20.2.tar.bz2
+
+[vars]
+filesize=688171
+sha512=049ae20d47a28b60fe5b0484e3c11bc6cd62d6167478f1d83df3066d618827ca9204767ab1b7a9ca02f542c3fc7929efc1bb85f65d66aaf5d5b15718b6de19e9
+pkgver=1
+
+[build]
+[ -n "$CROSS_COMPILE" ] && \
+  xconfflags="--host=$($CC -dumpmachine) \
+  --with-sysroot=$butch_root_dir"
+
+CPPFLAGS="-D_GNU_SOURCE" CFLAGS="$optcflags" CXXFLAGS="$optcflags" \
+LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
+  ./configure -C --prefix="$butch_prefix" --disable-nls $xconfflags
+
+make V=1 -j$MAKE_THREADS
+make DESTDIR="$butch_install_dir" install
