@@ -1,0 +1,39 @@
+[mirrors]
+https://github.com/lolilolicon/FFcast/archive/2.5.0.tar.gz
+
+[vars]
+filesize=25682
+sha512=64ba988756538a9c0721caffabed95bf4f7fa2dcbffc807b6af7741bd494369e1063eecc66a3ab56edf77910e857b25ee41555d08e3b864f695adadb3ad08c6f
+pkgver=1
+tarball=ffcast-2.5.0.tar.gz
+tardir=FFcast-2.5.0
+
+[deps]
+bash
+xrectsel
+imagemagick
+ffmpeg
+xdpyinfo
+xwininfo
+xprop
+
+[deps.host]
+autoconf
+
+[build]
+patch -p1 < "$K"/ffcast-busybox.patch
+
+./bootstrap
+
+[ -n "$CROSS_COMPILE" ] && \
+  xconfflags="--host=$($CC -dumpmachine) \
+  --with-sysroot=$butch_root_dir"
+
+./configure -C \
+  --prefix="$butch_prefix" \
+  --libexecdir="$butch_prefix"/usr/lib \
+  --sysconfdir="$butch_prefix"/etc \
+  $xconfflags
+
+make V=1 -j$MAKE_THREADS
+make DESTDIR="$butch_install_dir" install

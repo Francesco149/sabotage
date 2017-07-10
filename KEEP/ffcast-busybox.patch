@@ -1,0 +1,21 @@
+diff --git a/src/ffcast.bash b/src/ffcast.bash
+index 4ff438d..2759281 100644
+--- a/src/ffcast.bash
++++ b/src/ffcast.bash
+@@ -270,12 +270,10 @@ xwininfo_get_window_by_ref() {
+ xwininfo_get_size() {
+     local -x LC_ALL=C
+     xwininfo "$@" |
+-    sed -n '
+-    $q1
+-    /^  Width: \([0-9]\+\)$/!d
+-    s//\1/; h; n
+-    /^  Height: \([0-9]\+\)$/!q1
+-    s//\1/; H; x; s/\n/x/; p; q'
++      grep -E '(Width|Height)' |
++      sed 's/^  Width: //g;s/^  Height: /x/g' |
++      tr -d '\n' && \
++      echo
+ }
+ 
+ # stdin: xdpyinfo -ext XINERAMA (preferably sanitized)
