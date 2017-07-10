@@ -1,0 +1,12 @@
+[mirrors]
+https://github.com/MikuAuahDark/HonokaMiku/archive/v5.0.1.tar.gz
+
+[vars]
+filesize=24099
+sha512=bdccbc49f89c3c15f14090f2c1f89e66cc7789a9cd523a2f729622db86335fe17e76acb7f76eacc55b37edb062c61f0b0f1c8e8b871458239d000d1bc85ac535
+pkgver=1
+tarball=HonokaMiku-5.0.1.tar.gz
+
+[build]
+make V=1 -j$MAKE_THREADS
+install -Dm 755 bin/honokamiku/HonokaMiku "$butch_install_dir""$butch_prefix"/bin/honokamiku
