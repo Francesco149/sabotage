@@ -1,0 +1,21 @@
+[mirrors]
+http://ftp.gnome.org/pub/gnome/sources/gnome-themes-standard/3.22/gnome-themes-standard-3.22.2.tar.xz
+
+[vars]
+filesize=2900572
+sha512=d1fe6d93d06b9a231898055cf801adace0949c06658a08b445c3e0aaf127a4682d857463ee08a74d3652bad9e19bfaff4f651b5174cbeb76c99143da25cf39bd
+pkgver=1
+
+[build]
+[ -n "$CROSS_COMPILE" ] && \
+  xconfflags="--host=$($CC -dumpmachine) \
+  --with-sysroot=$butch_root_dir"
+
+CPPFLAGS="-D_GNU_SOURCE" CFLAGS="$optcflags" CXXFLAGS="$optcflags" \
+LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
+  ./configure -C --prefix="$butch_prefix" --disable-nls $xconfflags \
+    --disable-gtk3-engine
+
+make V=1 -j$MAKE_THREADS
+make DESTDIR="$butch_install_dir" install
+
