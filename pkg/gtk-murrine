@@ -1,0 +1,20 @@
+[mirrors]
+http://ftp.acc.umu.se/pub/gnome/sources/murrine/0.98/murrine-0.98.2.tar.xz
+
+[vars]
+filesize=296944
+sha512=5ed6b499b957c33d301c7ac508937517e8f9753fabb84e0cf977f67b10b09968cee5a10bdeae64a05f64606b5769e7313ededbb3b0c3ae9f78e34f893aa96667
+pkgver=1
+
+[build]
+[ -n "$CROSS_COMPILE" ] && \
+  xconfflags="--host=$($CC -dumpmachine) \
+  --with-sysroot=$butch_root_dir"
+
+CPPFLAGS="-D_GNU_SOURCE" CFLAGS="$optcflags" CXXFLAGS="$optcflags" \
+LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
+  ./configure -C --prefix="$butch_prefix" --disable-nls $xconfflags
+
+make V=1 -j$MAKE_THREADS
+make DESTDIR="$butch_install_dir" install
+
