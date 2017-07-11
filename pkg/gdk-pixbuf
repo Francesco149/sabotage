@@ -9,6 +9,7 @@ sha512=acc8c31c2436b6cce7eb1b93061d00aa231ffc8a19c247aa90d270d0cf67cfbd4a3c503d4
 libtiff
 libjpeg
 libpng
+librsvg
 glib
 xz
 
