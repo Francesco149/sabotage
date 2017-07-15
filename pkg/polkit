@@ -8,7 +8,6 @@ pkgver=1
 
 [deps]
 dbus-glib
-pam
 
 [deps.host]
 expat
