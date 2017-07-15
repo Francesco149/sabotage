@@ -18,7 +18,7 @@ pkgconf
 [build]
 $patchlist="glib-gtimer-varargs glib-gunicollate-segfault"
 
-if [ "$option_python" = 0 ]; then
+if [ "$option_python" -ne 1 ]; then
 	patchlist="$patchlist glib-no_python"
 fi
 
