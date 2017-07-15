@@ -1,0 +1,48 @@
+[mirrors]
+http://www.freedesktop.org/software/polkit/releases/polkit-0.105.tar.gz
+
+[vars]
+filesize=1431080
+sha512=7c0f84b9639814b4690e42b570285ff2018a5ea4cfd7216d9abf44c84ece6592c530f2d6211511c1346963daf4f135e9fa79d1b2f592b454115950991b5e4bc3
+pkgver=1
+
+[deps]
+dbus-glib
+pam
+
+[deps.host]
+expat
+glib
+
+[build]
+# you need to rebuild glib with python support to compile this:
+#     option_python=1 butch rebuild glib
+
+patch -p1 < "$K"/polkit-optional-netgroup.patch
+
+cp -f "$K"/config.sub .
+
+[ -n "$CROSS_COMPILE" ] && \
+  xconfflags="--host=$($CC -dumpmachine) \
+  --with-sysroot=$butch_root_dir"
+
+CPPFLAGS="-D_GNU_SOURCE" \
+CFLAGS="$optcflags" \
+CXXFLAGS="$optcflags" \
+LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
+  ./configure -C \
+    --prefix="$butch_prefix" \
+	--disable-nls \
+	--disable-systemd \
+	--disable-gtk-doc \
+	--disable-gtk-doc-html \
+	--disable-gtk-doc-pdf \
+	--disable-man-pages \
+	--disable-introspection \
+	--with-authfw=shadow \
+	$xconfflags
+
+#[ -n "$CROSS_COMPILE" ] && "$K"/libtool.cross.gen --sysroot="$butch_root_dir"
+
+make V=1 -j$MAKE_THREADS
+make DESTDIR="$butch_install_dir" install
