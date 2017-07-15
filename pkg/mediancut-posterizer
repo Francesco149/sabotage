@@ -8,6 +8,9 @@ pkgver=1
 tarball=mediancut-posterizer-1.6.tar.gz
 desc='Lossy PNG compressor for RGBA PNGs'
 
+[deps]
+libpng
+
 [build]
 export CPPFLAGS="-D_GNU_SOURCE"
 export CFLAGS="$optcflags" CXXFLAGS="$optcflags"
