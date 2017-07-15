@@ -1,0 +1,19 @@
+[mirrors]
+http://www.hnng.moe/stuff/optipng-0.7.6.tar.gz
+
+[vars]
+filesize=2202237
+sha512=d31d7494c23413d87b601a706cc2faf82923156a818da66e0bfad11741aed065db8f1b0c088d2abd66899ac192408c05f594295ded2684c4549c5f03b140a184
+pkgver=1
+
+[build]
+[ -n "$CROSS_COMPILE" ] && \
+  xconfflags="--host=$($CC -dumpmachine) \
+  --with-sysroot=$butch_root_dir"
+
+CPPFLAGS="-D_GNU_SOURCE" CFLAGS="$optcflags" CXXFLAGS="$optcflags" \
+LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
+  ./configure --prefix="$butch_prefix" $xconfflags
+
+make V=1 -j$MAKE_THREADS
+make DESTDIR="$butch_install_dir" install
