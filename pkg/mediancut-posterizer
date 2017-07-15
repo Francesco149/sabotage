@@ -1,0 +1,16 @@
+[mirrors]
+https://github.com/pornel/mediancut-posterizer/archive/1.6.tar.gz
+
+[vars]
+filesize=10892
+sha512=d4d98896fdc300b7abeee192ee4eb7b69a9fbf49593ef4a1aa14a7e1ae4c52d2c73faa09980d28097ad85d0cc7727c262e6e5c2d0db1f44cb7ce2ba4243dd50c
+pkgver=1
+tarball=mediancut-posterizer-1.6.tar.gz
+
+[build]
+export CPPFLAGS="-D_GNU_SOURCE"
+export CFLAGS="$optcflags" CXXFLAGS="$optcflags"
+export LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib"
+
+make V=1 -j$MAKE_THREADS
+install -Dm 755 posterize "$butch_install_dir""$butch_prefix"/bin/posterize
