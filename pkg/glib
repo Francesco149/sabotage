@@ -16,7 +16,13 @@ perl
 pkgconf
 
 [build]
-for p in glib-gtimer-varargs glib-no_python glib-gunicollate-segfault ; do
+$patchlist="glib-gtimer-varargs glib-gunicollate-segfault"
+
+if [ "$option_python" = 0 ]; then
+	patchlist="$patchlist glib-no_python"
+fi
+
+for p in $patchlist ; do
 	echo $p
 	patch -p1 < "$K"/$p.patch
 done
