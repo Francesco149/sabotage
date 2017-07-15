@@ -12,6 +12,7 @@ dbus-glib
 [deps.host]
 expat
 glib
+intltool
 
 [build]
 # you need to rebuild glib with python support to compile this:
