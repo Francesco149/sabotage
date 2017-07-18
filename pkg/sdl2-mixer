@@ -32,8 +32,11 @@ CFLAGS="$optcflags " \
 LDFLAGS="$optldflags -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
 CPPFLAGS="-D_GNU_SOURCE -include patch.h" \
   ./configure -C --prefix="$butch_prefix" $xconfflags \
-  --disable-music-mp3 \
-  --disable-smpegtest
+  --enable-music-mp3 \
+  --disable-smpegtest \
+  --disable-music-mp3-smpeg \
+  --enable-music-mod-mikmod \
+  --enable-music-mp3-mad-gpl
 # smpeg is unmaintained and beyond broken, so we disable it with
 # --disable-music-mp3, otherwise it would get pulled in if the host has it
 # installed (detected via smpeg-config binary). we would need to create
