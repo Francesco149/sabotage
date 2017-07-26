@@ -1,0 +1,216 @@
+--- llvm-3.8.0.src/include/llvm/Analysis/TargetLibraryInfo.def
++++ llvm-3.8.0.src.patched/include/llvm/Analysis/TargetLibraryInfo.def
+@@ -525,9 +525,6 @@
+ /// FILE *fopen(const char *filename, const char *mode);
+ TLI_DEFINE_ENUM_INTERNAL(fopen)
+ TLI_DEFINE_STRING_INTERNAL("fopen")
+-/// FILE *fopen64(const char *filename, const char *opentype)
+-TLI_DEFINE_ENUM_INTERNAL(fopen64)
+-TLI_DEFINE_STRING_INTERNAL("fopen64")
+ /// int fprintf(FILE *stream, const char *format, ...);
+ TLI_DEFINE_ENUM_INTERNAL(fprintf)
+ TLI_DEFINE_STRING_INTERNAL("fprintf")
+@@ -561,9 +558,6 @@
+ /// int fseeko(FILE *stream, off_t offset, int whence);
+ TLI_DEFINE_ENUM_INTERNAL(fseeko)
+ TLI_DEFINE_STRING_INTERNAL("fseeko")
+-/// int fseeko64(FILE *stream, off64_t offset, int whence)
+-TLI_DEFINE_ENUM_INTERNAL(fseeko64)
+-TLI_DEFINE_STRING_INTERNAL("fseeko64")
+ /// int fsetpos(FILE *stream, const fpos_t *pos);
+ TLI_DEFINE_ENUM_INTERNAL(fsetpos)
+ TLI_DEFINE_STRING_INTERNAL("fsetpos")
+@@ -585,9 +579,6 @@
+ /// off_t ftello(FILE *stream);
+ TLI_DEFINE_ENUM_INTERNAL(ftello)
+ TLI_DEFINE_STRING_INTERNAL("ftello")
+-/// off64_t ftello64(FILE *stream)
+-TLI_DEFINE_ENUM_INTERNAL(ftello64)
+-TLI_DEFINE_STRING_INTERNAL("ftello64")
+ /// int ftrylockfile(FILE *file);
+ TLI_DEFINE_ENUM_INTERNAL(ftrylockfile)
+ TLI_DEFINE_STRING_INTERNAL("ftrylockfile")
+@@ -705,9 +696,6 @@
+ /// int lstat(const char *path, struct stat *buf);
+ TLI_DEFINE_ENUM_INTERNAL(lstat)
+ TLI_DEFINE_STRING_INTERNAL("lstat")
+-/// int lstat64(const char *path, struct stat64 *buf);
+-TLI_DEFINE_ENUM_INTERNAL(lstat64)
+-TLI_DEFINE_STRING_INTERNAL("lstat64")
+ /// void *malloc(size_t size);
+ TLI_DEFINE_ENUM_INTERNAL(malloc)
+ TLI_DEFINE_STRING_INTERNAL("malloc")
+@@ -921,9 +909,6 @@
+ /// int stat(const char *path, struct stat *buf);
+ TLI_DEFINE_ENUM_INTERNAL(stat)
+ TLI_DEFINE_STRING_INTERNAL("stat")
+-/// int stat64(const char *path, struct stat64 *buf);
+-TLI_DEFINE_ENUM_INTERNAL(stat64)
+-TLI_DEFINE_STRING_INTERNAL("stat64")
+ /// int statvfs(const char *path, struct statvfs *buf);
+ TLI_DEFINE_ENUM_INTERNAL(statvfs)
+ TLI_DEFINE_STRING_INTERNAL("statvfs")
+@@ -1050,9 +1035,6 @@
+ /// FILE *tmpfile(void);
+ TLI_DEFINE_ENUM_INTERNAL(tmpfile)
+ TLI_DEFINE_STRING_INTERNAL("tmpfile")
+-/// FILE *tmpfile64(void)
+-TLI_DEFINE_ENUM_INTERNAL(tmpfile64)
+-TLI_DEFINE_STRING_INTERNAL("tmpfile64")
+ /// int toascii(int c);
+ TLI_DEFINE_ENUM_INTERNAL(toascii)
+ TLI_DEFINE_STRING_INTERNAL("toascii")
+--- llvm-3.8.0.src/lib/Analysis/TargetLibraryInfo.cpp
++++ llvm-3.8.0.src.patched/lib/Analysis/TargetLibraryInfo.cpp
+@@ -375,16 +375,10 @@
+     TLI.setUnavailable(LibFunc::under_IO_getc);
+     TLI.setUnavailable(LibFunc::under_IO_putc);
+     TLI.setUnavailable(LibFunc::memalign);
+-    TLI.setUnavailable(LibFunc::fopen64);
+-    TLI.setUnavailable(LibFunc::fseeko64);
+     TLI.setUnavailable(LibFunc::fstat64);
+     TLI.setUnavailable(LibFunc::fstatvfs64);
+-    TLI.setUnavailable(LibFunc::ftello64);
+-    TLI.setUnavailable(LibFunc::lstat64);
+     TLI.setUnavailable(LibFunc::open64);
+-    TLI.setUnavailable(LibFunc::stat64);
+     TLI.setUnavailable(LibFunc::statvfs64);
+-    TLI.setUnavailable(LibFunc::tmpfile64);
+   }
+ 
+   TLI.addVectorizableFunctionsFromVecLib(ClVectorLibrary);
+--- llvm-3.8.0.src/lib/ExecutionEngine/RuntimeDyld/RTDyldMemoryManager.cpp
++++ llvm-3.8.0.src.patched/lib/ExecutionEngine/RuntimeDyld/RTDyldMemoryManager.cpp
+@@ -33,7 +33,7 @@
+ RTDyldMemoryManager::~RTDyldMemoryManager() {}
+ 
+ // Determine whether we can register EH tables.
+-#if (defined(__GNUC__) && !defined(__ARM_EABI__) && !defined(__ia64__) && \
++#if (defined(__GLIBC__) && !defined(__ARM_EABI__) && !defined(__ia64__) && \
+      !defined(__SEH__) && !defined(__USING_SJLJ_EXCEPTIONS__))
+ #define HAVE_EHTABLE_SUPPORT 1
+ #else
+--- llvm-3.8.0.src/lib/Support/DynamicLibrary.cpp
++++ llvm-3.8.0.src.patched/lib/Support/DynamicLibrary.cpp
+@@ -143,7 +143,7 @@
+ // On linux we have a weird situation. The stderr/out/in symbols are both
+ // macros and global variables because of standards requirements. So, we
+ // boldly use the EXPLICIT_SYMBOL macro without checking for a #define first.
+-#if defined(__linux__) and !defined(__ANDROID__)
++#if defined(__GLIBC__)
+   {
+     EXPLICIT_SYMBOL(stderr);
+     EXPLICIT_SYMBOL(stdout);
+--- llvm-3.8.0.src/lib/Support/Unix/Signals.inc
++++ llvm-3.8.0.src.patched/lib/Support/Unix/Signals.inc
+@@ -315,7 +315,7 @@
+ // On glibc systems we have the 'backtrace' function, which works nicely, but
+ // doesn't demangle symbols.
+ void llvm::sys::PrintStackTrace(raw_ostream &OS) {
+-#if defined(HAVE_BACKTRACE) && defined(ENABLE_BACKTRACES)
++#if defined(__GLIBC__) && defined(HAVE_BACKTRACE) && defined(ENABLE_BACKTRACES)
+   static void* StackTrace[256];
+   // Use backtrace() to output a backtrace on Linux systems with glibc.
+   int depth = backtrace(StackTrace,
+--- llvm-3.8.0.src/lib/Transforms/IPO/InferFunctionAttrs.cpp
++++ llvm-3.8.0.src.patched/lib/Transforms/IPO/InferFunctionAttrs.cpp
+@@ -823,8 +823,6 @@
+     Changed |= setDoesNotCapture(F, 1);
+     Changed |= setOnlyReadsMemory(F, 1);
+     return Changed;
+-  case LibFunc::stat64:
+-  case LibFunc::lstat64:
+   case LibFunc::statvfs64:
+     if (FTy->getNumParams() < 1 || !FTy->getParamType(0)->isPointerTy() ||
+         !FTy->getParamType(1)->isPointerTy())
+@@ -843,31 +841,6 @@
+     Changed |= setDoesNotCapture(F, 2);
+     Changed |= setOnlyReadsMemory(F, 1);
+     Changed |= setOnlyReadsMemory(F, 2);
+-    return Changed;
+-  case LibFunc::fopen64:
+-    if (FTy->getNumParams() != 2 || !FTy->getReturnType()->isPointerTy() ||
+-        !FTy->getParamType(0)->isPointerTy() ||
+-        !FTy->getParamType(1)->isPointerTy())
+-      return false;
+-    Changed |= setDoesNotThrow(F);
+-    Changed |= setDoesNotAlias(F, 0);
+-    Changed |= setDoesNotCapture(F, 1);
+-    Changed |= setDoesNotCapture(F, 2);
+-    Changed |= setOnlyReadsMemory(F, 1);
+-    Changed |= setOnlyReadsMemory(F, 2);
+-    return Changed;
+-  case LibFunc::fseeko64:
+-  case LibFunc::ftello64:
+-    if (FTy->getNumParams() == 0 || !FTy->getParamType(0)->isPointerTy())
+-      return false;
+-    Changed |= setDoesNotThrow(F);
+-    Changed |= setDoesNotCapture(F, 1);
+-    return Changed;
+-  case LibFunc::tmpfile64:
+-    if (!FTy->getReturnType()->isPointerTy())
+-      return false;
+-    Changed |= setDoesNotThrow(F);
+-    Changed |= setDoesNotAlias(F, 0);
+     return Changed;
+   case LibFunc::fstat64:
+   case LibFunc::fstatvfs64:
+--- llvm-3.8.0.src/projects/compiler-rt/lib/Makefile.mk
++++ llvm-3.8.0.src.patched/projects/compiler-rt/lib/Makefile.mk
+@@ -10,10 +10,10 @@
+ SubDirs :=
+ 
+ # Add submodules.
+-SubDirs += asan
++#SubDirs += asan
+ SubDirs += builtins
+ SubDirs += interception
+-SubDirs += lsan
++#SubDirs += lsan
+ SubDirs += profile
+-SubDirs += sanitizer_common
+-SubDirs += ubsan
++#SubDirs += sanitizer_common
++#SubDirs += ubsan
+--- llvm-3.8.0.src/projects/compiler-rt/lib/interception/interception_linux.cc
++++ llvm-3.8.0.src.patched/projects/compiler-rt/lib/interception/interception_linux.cc
+@@ -24,12 +24,6 @@
+   return real == wrapper;
+ }
+ 
+-#if !defined(__ANDROID__)  // android does not have dlvsym
+-void *GetFuncAddrVer(const char *func_name, const char *ver) {
+-  return dlvsym(RTLD_NEXT, func_name, ver);
+-}
+-#endif  // !defined(__ANDROID__)
+-
+ }  // namespace __interception
+ 
+ 
+--- llvm-3.8.0.src/projects/compiler-rt/lib/interception/interception_linux.h
++++ llvm-3.8.0.src.patched/projects/compiler-rt/lib/interception/interception_linux.h
+@@ -34,14 +34,8 @@
+       (::__interception::uptr) & (func),                                   \
+       (::__interception::uptr) & WRAP(func))
+ 
+-#if !defined(__ANDROID__)  // android does not have dlvsym
+ #define INTERCEPT_FUNCTION_VER_LINUX_OR_FREEBSD(func, symver) \
+-  (::__interception::real_##func = (func##_f)(                \
+-       unsigned long)::__interception::GetFuncAddrVer(#func, symver))
+-#else
+-#define INTERCEPT_FUNCTION_VER_LINUX_OR_FREEBSD(func, symver) \
+   INTERCEPT_FUNCTION_LINUX_OR_FREEBSD(func)
+-#endif  // !defined(__ANDROID__)
+ 
+ #endif  // INTERCEPTION_LINUX_H
+ #endif  // __linux__ || __FreeBSD__
+--- llvm-3.8.0.src/utils/unittest/googletest/src/gtest.cc
++++ llvm-3.8.0.src.patched/utils/unittest/googletest/src/gtest.cc
+@@ -120,6 +120,7 @@
+ 
+ #if GTEST_CAN_STREAM_RESULTS_
+ # include <arpa/inet.h>  // NOLINT
++# include <sys/socket.h>
+ # include <netdb.h>  // NOLINT
+ #endif
+ 

@@ -1,0 +1,7 @@
+[mirrors]
+http://llvm.org/releases/3.8.0/compiler-rt-3.8.0.src.tar.xz
+
+[vars]
+filesize=1270128
+sha512=21ba548b6b35a79aa291adba7f83db14c33855fa3cf376f2ad75bd22bb454501b74f0ea4f71bc03a864135862c800b101d3cd790e54e687c2a3459c64218b9c3
+pkgver=1

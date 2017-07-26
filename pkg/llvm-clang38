@@ -1,0 +1,38 @@
+[mirrors]
+http://llvm.org/releases/3.8.0/llvm-3.8.0.src.tar.xz
+
+[vars]
+filesize=16580932
+sha512=2c76e79d803768ed20af6ca1801cf2518071bf9835c54580ea3eb6219a66cdcf8b4c575f192c15082cc18d2468b7611dacb57950b605813a2317125c2d33c138
+pkgver=1
+
+[deps.host]
+cmake
+
+[deps]
+libffi
+clang38
+compiler-rt38
+
+[build]
+tar xf "$C"/cfe-3.8.0.src.tar.xz
+mv ./cfe-3.8.0.src ./tools/clang
+tar xf "$C"/compiler-rt-3.8.0.src.tar.xz
+mv ./compiler-rt-3.8.0.src ./projects/compiler-rt
+
+patch -p1 < "$K"/llvm38.patch
+patch -p1 < "$K"/llvm38-dynlinker.patch
+
+mkdir build && cd build
+
+conflags='--enable-libffi --enable-optimized --enable-shared
+	--disable-docs --enable-targets=all --prefix='"$butch_prefix"
+if [ ! -z "$DEBUGBUILD" ] ; then
+	conflags='--enable-debug-runtime --enable-debug-symbols
+	--enable-keep-symbols --enable-libffi --enable-optimized
+	--enable-shared --disable-docs --enable-targets=all --prefix='"$butch_prefix"
+fi
+../configure $conflags
+
+make -j$MAKE_THREADS
+make DESTDIR="$butch_install_dir" install

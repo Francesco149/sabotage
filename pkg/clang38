@@ -1,0 +1,7 @@
+[mirrors]
+http://llvm.org/releases/3.8.0/cfe-3.8.0.src.tar.xz
+
+[vars]
+filesize=9627228
+sha512=fef431d63f95a394d53e3857fb6a6bde7a7b27f40ef5111b4353bcb63ac26febec8a9eb84780187c49699ab099834f13f996f085d02c365676b3fa5bbcc03dcd
+pkgver=1
