@@ -14,6 +14,9 @@ libffi
 clang38
 compiler-rt38
 
+[deps.host]
+cmake
+
 [build]
 tar xf "$C"/cfe-3.8.0.src.tar.xz
 mv ./cfe-3.8.0.src ./tools/clang
@@ -23,16 +26,43 @@ mv ./compiler-rt-3.8.0.src ./projects/compiler-rt
 patch -p1 < "$K"/llvm38.patch
 patch -p1 < "$K"/llvm38-dynlinker.patch
 
-mkdir build && cd build
+# TODO: any way to enable rtti from the normal configure script instead of
+#       using cmake?
 
-conflags='--enable-libffi --enable-optimized --enable-shared
-	--disable-docs --enable-targets=all --prefix='"$butch_prefix"
-if [ ! -z "$DEBUGBUILD" ] ; then
-	conflags='--enable-debug-runtime --enable-debug-symbols
-	--enable-keep-symbols --enable-libffi --enable-optimized
-	--enable-shared --disable-docs --enable-targets=all --prefix='"$butch_prefix"
-fi
-../configure $conflags
+mkdir -p build && cd build
+for i in ar ld nm objcopy objdump strip ; do
+printf '#!/bin/sh\n%s%s "$@"\n' "$CROSS_COMPILE" "$i" > "$CROSS_COMPILE""$i"
+chmod +x "$CROSS_COMPILE""$i"
+done
+[ -n "$CROSS_COMPILE" ] && xconfflags="
+-DCMAKE_FIND_ROOT_PATH=$butch_root_dir$butch_prefix \
+-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+-DCMAKE_AR="$CROSS_COMPILE"ar \
+-DCMAKE_LD="$CROSS_COMPILE"ld \
+-DCMAKE_NM="$CROSS_COMPILE"nm \
+-DCMAKE_OBJCOPY="$CROSS_COMPILE"objcopy \
+-DCMAKE_OBJDUMP="$CROSS_COMPILE"objdump \
+-DCMAKE_STRIP="$CROSS_COMPILE"strip \
+"
 
-make -j$MAKE_THREADS
+ffi_include_dir="$(pkg-config --cflags-only-I libffi | sed 's|^-I||g')"
+
+CFLAGS="-D_GNU_SOURCE $optcflags" \
+LDFLAGS="$optldflags  -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
+CXXFLAGS="$optcflags" \
+cmake $xconfflags \
+  -DCMAKE_INSTALL_PREFIX="$butch_prefix/" \
+  -DCMAKE_VERBOSE_MAKEFILE=ON \
+  -DFFI_INCLUDE_DIR="$ffi_include_dir" \
+  -DLLVM_ENABLE_FFI=ON \
+  -DLLVM_BUILD_DOCS=OFF \
+  -DLLVM_ENABLE_RTTI=ON \
+  -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
+  -DLLVM_TARGETS_TO_BUILD='all' \
+  -DLLVM_DYLIB_EXPORT_ALL=ON \
+  -DLLVM_BUILD_LLVM_DYLIB=ON \
+  ..
+make -j$MAKE_THREADS VERBOSE=1
 make DESTDIR="$butch_install_dir" install
