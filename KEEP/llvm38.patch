@@ -10,7 +10,7 @@
  /// int fprintf(FILE *stream, const char *format, ...);
  TLI_DEFINE_ENUM_INTERNAL(fprintf)
  TLI_DEFINE_STRING_INTERNAL("fprintf")
-@@ -561,9 +558,6 @@
+@@ -561,18 +558,12 @@
  /// int fseeko(FILE *stream, off_t offset, int whence);
  TLI_DEFINE_ENUM_INTERNAL(fseeko)
  TLI_DEFINE_STRING_INTERNAL("fseeko")
@@ -20,7 +20,16 @@
  /// int fsetpos(FILE *stream, const fpos_t *pos);
  TLI_DEFINE_ENUM_INTERNAL(fsetpos)
  TLI_DEFINE_STRING_INTERNAL("fsetpos")
-@@ -585,9 +579,6 @@
+ /// int fstat(int fildes, struct stat *buf);
+ TLI_DEFINE_ENUM_INTERNAL(fstat)
+ TLI_DEFINE_STRING_INTERNAL("fstat")
+-/// int fstat64(int filedes, struct stat64 *buf)
+-TLI_DEFINE_ENUM_INTERNAL(fstat64)
+-TLI_DEFINE_STRING_INTERNAL("fstat64")
+ /// int fstatvfs(int fildes, struct statvfs *buf);
+ TLI_DEFINE_ENUM_INTERNAL(fstatvfs)
+ TLI_DEFINE_STRING_INTERNAL("fstatvfs")
+@@ -585,9 +576,6 @@
  /// off_t ftello(FILE *stream);
  TLI_DEFINE_ENUM_INTERNAL(ftello)
  TLI_DEFINE_STRING_INTERNAL("ftello")
@@ -30,7 +39,7 @@
  /// int ftrylockfile(FILE *file);
  TLI_DEFINE_ENUM_INTERNAL(ftrylockfile)
  TLI_DEFINE_STRING_INTERNAL("ftrylockfile")
-@@ -705,9 +696,6 @@
+@@ -705,9 +693,6 @@
  /// int lstat(const char *path, struct stat *buf);
  TLI_DEFINE_ENUM_INTERNAL(lstat)
  TLI_DEFINE_STRING_INTERNAL("lstat")
@@ -40,7 +49,7 @@
  /// void *malloc(size_t size);
  TLI_DEFINE_ENUM_INTERNAL(malloc)
  TLI_DEFINE_STRING_INTERNAL("malloc")
-@@ -921,9 +909,6 @@
+@@ -921,9 +906,6 @@
  /// int stat(const char *path, struct stat *buf);
  TLI_DEFINE_ENUM_INTERNAL(stat)
  TLI_DEFINE_STRING_INTERNAL("stat")
@@ -50,7 +59,7 @@
  /// int statvfs(const char *path, struct statvfs *buf);
  TLI_DEFINE_ENUM_INTERNAL(statvfs)
  TLI_DEFINE_STRING_INTERNAL("statvfs")
-@@ -1050,9 +1035,6 @@
+@@ -1050,9 +1032,6 @@
  /// FILE *tmpfile(void);
  TLI_DEFINE_ENUM_INTERNAL(tmpfile)
  TLI_DEFINE_STRING_INTERNAL("tmpfile")
@@ -62,13 +71,13 @@
  TLI_DEFINE_STRING_INTERNAL("toascii")
 --- llvm-3.8.0.src/lib/Analysis/TargetLibraryInfo.cpp
 +++ llvm-3.8.0.src.patched/lib/Analysis/TargetLibraryInfo.cpp
-@@ -375,16 +375,10 @@
+@@ -375,16 +375,9 @@
      TLI.setUnavailable(LibFunc::under_IO_getc);
      TLI.setUnavailable(LibFunc::under_IO_putc);
      TLI.setUnavailable(LibFunc::memalign);
 -    TLI.setUnavailable(LibFunc::fopen64);
 -    TLI.setUnavailable(LibFunc::fseeko64);
-     TLI.setUnavailable(LibFunc::fstat64);
+-    TLI.setUnavailable(LibFunc::fstat64);
      TLI.setUnavailable(LibFunc::fstatvfs64);
 -    TLI.setUnavailable(LibFunc::ftello64);
 -    TLI.setUnavailable(LibFunc::lstat64);
@@ -123,11 +132,10 @@
    case LibFunc::statvfs64:
      if (FTy->getNumParams() < 1 || !FTy->getParamType(0)->isPointerTy() ||
          !FTy->getParamType(1)->isPointerTy())
-@@ -843,31 +841,6 @@
-     Changed |= setDoesNotCapture(F, 2);
+@@ -844,32 +842,6 @@
      Changed |= setOnlyReadsMemory(F, 1);
      Changed |= setOnlyReadsMemory(F, 2);
--    return Changed;
+     return Changed;
 -  case LibFunc::fopen64:
 -    if (FTy->getNumParams() != 2 || !FTy->getReturnType()->isPointerTy() ||
 -        !FTy->getParamType(0)->isPointerTy() ||
@@ -152,9 +160,11 @@
 -      return false;
 -    Changed |= setDoesNotThrow(F);
 -    Changed |= setDoesNotAlias(F, 0);
-     return Changed;
-   case LibFunc::fstat64:
+-    return Changed;
+-  case LibFunc::fstat64:
    case LibFunc::fstatvfs64:
+     if (FTy->getNumParams() != 2 || !FTy->getParamType(1)->isPointerTy())
+       return false;
 --- llvm-3.8.0.src/projects/compiler-rt/lib/Makefile.mk
 +++ llvm-3.8.0.src.patched/projects/compiler-rt/lib/Makefile.mk
 @@ -10,10 +10,10 @@
