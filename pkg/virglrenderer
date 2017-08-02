@@ -11,6 +11,7 @@ repo=virglrenderer
 
 if [ -d "$dest/${repo}-git" ] ; then
 	cd "$dest/${repo}-git"
+	git checkout vtest/util.h
 	git pull || exit 1
 else
 	mkdir -p "$dest"
