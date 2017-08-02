@@ -1,10 +1,10 @@
 [mirrors]
-http://dri.freedesktop.org/libdrm/libdrm-2.4.80.tar.bz2
+https://dri.freedesktop.org/libdrm/libdrm-2.4.82.tar.gz
 
 [vars]
-filesize=771243
-sha512=478f64bcc6f4815368ae86d023f11ba6b37595bb9d8baa588b466c6c0e2aae48a50a489137750ed21fbabef5afabf183c78c152eb770bfe316fa7401b191a30b
-pkgver=3
+filesize=1052498
+sha512=0ce76d459c21e9db8a759c1fe64457c7852628dff213309e268edfa4b8c653515050b6afd6d0fa93989ed5480199d8a845dc0411b06559c219b876bb7f3cb129
+pkgver=4
 
 [deps]
 libpciaccess
@@ -18,3 +18,4 @@ CFLAGS="-D_GNU_SOURCE $optcflags" LDFLAGS="$optldflags" \
   --disable-cairo-tests
 make V=1 -j$MAKE_THREADS
 make DESTDIR="$butch_install_dir" install
+
