@@ -1,0 +1,72 @@
+[deps.host]
+svn
+cmake
+
+[deps]
+libffi
+
+[build]
+builddir="$S/build"
+rev=309585
+clonedir=$butch_package_name-clone
+
+echo "cloning/updating..."
+cd "$builddir"
+svn co -r $rev http://llvm.org/svn/llvm-project/llvm/trunk $clonedir
+cd $clonedir
+cd tools
+svn co -r $rev http://llvm.org/svn/llvm-project/cfe/trunk clang
+cd ../projects
+svn co -r $rev http://llvm.org/svn/llvm-project/compiler-rt/trunk compiler-rt
+cd ..
+
+# TODO: any way to enable rtti from the normal configure script instead of
+#       using cmake?
+
+mkdir -p build && cd build
+for i in ar ld nm objcopy objdump strip ; do
+printf '#!/bin/sh\n%s%s "$@"\n' "$CROSS_COMPILE" "$i" > "$CROSS_COMPILE""$i"
+chmod +x "$CROSS_COMPILE""$i"
+done
+[ -n "$CROSS_COMPILE" ] && xconfflags="
+-DCMAKE_FIND_ROOT_PATH=$butch_root_dir$butch_prefix \
+-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+-DCMAKE_AR="$CROSS_COMPILE"ar \
+-DCMAKE_LD="$CROSS_COMPILE"ld \
+-DCMAKE_NM="$CROSS_COMPILE"nm \
+-DCMAKE_OBJCOPY="$CROSS_COMPILE"objcopy \
+-DCMAKE_OBJDUMP="$CROSS_COMPILE"objdump \
+-DCMAKE_STRIP="$CROSS_COMPILE"strip \
+"
+
+ffi_include_dir="$(pkg-config --cflags-only-I libffi | sed 's|^-I||g')"
+
+# LLVM_HOST_TRIPLE is not working. TODO: find a way to override the
+# host and default target triplet
+# for now, just run clang with --target=$(gcc -dumpmachine)
+
+CFLAGS="-D_GNU_SOURCE $optcflags" \
+LDFLAGS="$optldflags  -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
+CXXFLAGS="$optcflags" \
+cmake $xconfflags \
+  -DCMAKE_INSTALL_PREFIX="$butch_prefix/" \
+  -DCMAKE_VERBOSE_MAKEFILE=ON \
+  -DFFI_INCLUDE_DIR="$ffi_include_dir" \
+  -DLLVM_INCLUDE_TESTS=OFF \
+  -DLLVM_ENABLE_FFI=ON \
+  -DLLVM_BUILD_DOCS=OFF \
+  -DLLVM_ENABLE_RTTI=ON \
+  -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
+  -DCOMPILER_RT_BUILD_XRAY=OFF \
+  -DLLVM_INCLUDE_TESTS=OFF \
+  -DLLVM_TARGETS_TO_BUILD='all' \
+  -DLLVM_DYLIB_EXPORT_ALL=ON \
+  -DLLVM_BUILD_LLVM_DYLIB=ON \
+  -DLLVM_HOST_TRIPLE=$($CC -dumpmachine) \
+  ..
+make clean
+make -j$MAKE_THREADS VERBOSE=1
+make DESTDIR="$butch_install_dir" install
+
