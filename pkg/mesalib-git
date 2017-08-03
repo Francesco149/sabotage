@@ -1,0 +1,83 @@
+[deps]
+dri2proto
+dri3proto
+presentproto
+gettext
+glproto
+libdrm
+libxdamage
+libxext
+libxml2
+libxshmfence
+libxxf86vm
+eudev
+expat
+llvm-clang-svn
+libelf
+
+[deps.host]
+flex
+bison
+python
+python-mako
+
+[build]
+# Remember to manually edit CONFIG_EXTRA_FIRMWARE with the correct
+# firmware blobs for your card to /src/KEEP/linux.config
+# (see https://wiki.gentoo.org/wiki/Radeon#Firmware)
+#
+# Check that the blobs you have specified exist in /lib/firmware
+# if they don't, update/install linux-firmware-git
+#
+# Once you have the firmware in place, add
+# CONFIG_EXTRA_FIRMWARE_DIR=/lib/firmware
+# and rebuild the kernel
+
+rev=06e20c4b8c59104b789981e6d98f3d13bfa8d69f
+reponame=mesa
+repo=git://anongit.freedesktop.org/git/mesa/$reponame
+
+# since it's supposed to be a cutting-edge package, it should be
+# safe to do a shallow clone as we will be updating this often
+git clone $repo --depth 1000 || exit 1
+cd $reponame
+git checkout $rev || exit 1
+
+archflags=
+[ "$A" = arm ] || [ "$A" = mips ] && archflags=--with-dri-drivers=swrast
+[ -n "$CROSS_COMPILE" ] && \
+  xconfflags="--host=$($CC -dumpmachine) --with-sysroot=$butch_root_dir"
+
+# workaround for missing endian-ness defines taken from alpine linux
+patch -p1 < "$K"/mesa-git-endian.patch
+
+# gnu sed -> busybox sed
+sed 's/sed -E/sed -r/g' -i configure.ac || exit 1
+
+# TODO: figure out how to get llvm to build the shared libs mesa wants
+
+CPPFLAGS="-D_GNU_SOURCE -I $PWD/include/c11" \
+CFLAGS="$optcflags" LDFLAGS="$optldflags" \
+  ./autogen.sh -C --prefix="$butch_prefix" $xconfflags \
+  --sysconfdir="$butch_prefix"/etc \
+  --with-gallium-drivers="nouveau,radeonsi,r300,r600" \
+  --with-vulkan-drivers="radeon" \
+  --enable-llvm=yes \
+  --disable-llvm-shared-libs \
+  --enable-gallium-tests=no \
+  --enable-texture-float \
+  --enable-gles1 \
+  --enable-gles2 \
+  --enable-osmesa \
+  --disable-xa \
+  --disable-asm \
+  --disable-glx-tls \
+  --enable-gbm \
+  --with-platforms="drm,x11" $archflags
+
+"$K"/libtool.cross.gen --sysroot="$butch_root_dir"
+
+echo true >  bin/missing
+
+make V=1 -j$MAKE_THREADS
+make DESTDIR="$butch_install_dir" install
