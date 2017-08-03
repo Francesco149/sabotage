@@ -1,0 +1,12 @@
+[mirrors]
+https://github.com/MikuAuahDark/Itsudemo/archive/v1.0.6.tar.gz
+
+[vars]
+filesize=234938
+sha512=a50ca9e90bac755d84ac32f7956f01d5d1a06af484195bda522cfa342ed7ae2d3d733a2c74f7161573b7cd8a5291c04ebd1230dd68d6105cc75e2266a0943761
+pkgver=1
+tarball=Itsudemo-1.0.6.tar.gz
+
+[build]
+make V=1 -j$MAKE_THREADS
+install -Dm 755 Itsudemo "$butch_install_dir""$butch_prefix"/bin/itsudemo
