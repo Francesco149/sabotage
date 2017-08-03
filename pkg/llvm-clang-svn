@@ -43,10 +43,6 @@ done
 
 ffi_include_dir="$(pkg-config --cflags-only-I libffi | sed 's|^-I||g')"
 
-# LLVM_HOST_TRIPLE is not working. TODO: find a way to override the
-# host and default target triplet
-# for now, just run clang with --target=$(gcc -dumpmachine)
-
 CFLAGS="-D_GNU_SOURCE $optcflags" \
 LDFLAGS="$optldflags  -Wl,-rpath-link=$butch_root_dir$butch_prefix/lib" \
 CXXFLAGS="$optcflags" \
@@ -65,6 +61,7 @@ cmake $xconfflags \
   -DLLVM_DYLIB_EXPORT_ALL=ON \
   -DLLVM_BUILD_LLVM_DYLIB=ON \
   -DLLVM_HOST_TRIPLE=$($CC -dumpmachine) \
+  -DLLVM_DEFAULT_TARGET_TRIPLE=$A-unknown-linux-musl \
   ..
 make clean
 make -j$MAKE_THREADS VERBOSE=1
