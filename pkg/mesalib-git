@@ -16,6 +16,7 @@ llvm-clang-svn
 libelf
 
 [deps.host]
+git
 flex
 bison
 python
