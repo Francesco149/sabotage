@@ -60,6 +60,7 @@ cmake $xconfflags \
   -DLLVM_TARGETS_TO_BUILD='all' \
   -DLLVM_DYLIB_EXPORT_ALL=ON \
   -DLLVM_BUILD_LLVM_DYLIB=ON \
+  -DLLVM_LINK_LLVM_DYLIB=ON \
   -DLLVM_HOST_TRIPLE=$($CC -dumpmachine) \
   -DLLVM_DEFAULT_TARGET_TRIPLE=$A-unknown-linux-musl \
   ..
