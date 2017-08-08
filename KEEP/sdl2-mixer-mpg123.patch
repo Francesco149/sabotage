@@ -1,0 +1,1087 @@
+From 0c8d00bc224cf56a4ff9d92b012d049f4807e61d Mon Sep 17 00:00:00 2001
+From: "Franc[e]sco" <lolisamurai@tfwno.gf>
+Date: Tue, 8 Aug 2017 03:58:06 +0200
+Subject: [PATCH] add mpg123 support
+
+---
+ SDL2_mixer.spec |   2 +-
+ SDL_mixer.h     |   5 +-
+ configure       |  84 +++++++++---
+ configure.in    |  32 ++++-
+ dynamic_mp3.c   |  19 +++
+ dynamic_mp3.h   |   4 +
+ load_mp3.c      |  33 ++++-
+ load_mp3.h      |   2 +-
+ mixer.c         |   8 +-
+ music.c         |  57 +++++++-
+ music_mpg.c     | 396 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ music_mpg.h     |  58 +++++++++
+ 12 files changed, 667 insertions(+), 33 deletions(-)
+ create mode 100644 music_mpg.c
+ create mode 100644 music_mpg.h
+
+diff --git a/SDL2_mixer.spec b/SDL2_mixer.spec
+index dfa45e7..a582cbf 100644
+--- a/SDL2_mixer.spec
++++ b/SDL2_mixer.spec
+@@ -1,5 +1,5 @@
+ %define name SDL2_mixer
+-%define version 2.0.1
++%define version 2.0.2
+ %define release 1
+ 
+ Summary: Simple DirectMedia Layer - Sample Mixer Library
+diff --git a/SDL_mixer.h b/SDL_mixer.h
+index 71c1f5c..941d9f0 100644
+--- a/SDL_mixer.h
++++ b/SDL_mixer.h
+@@ -123,6 +123,7 @@ typedef enum {
+     MUS_OGG,
+     MUS_MP3,
+     MUS_MP3_MAD,
++    MUS_MP3_MPG,
+     MUS_FLAC,
+     MUS_MODPLUG
+ } Mix_MusicType;
+@@ -587,8 +588,8 @@ extern DECLSPEC int SDLCALL Mix_PausedMusic(void);
+ /* Set the current position in the music stream.
+    This returns 0 if successful, or -1 if it failed or isn't implemented.
+    This function is only implemented for MOD music formats (set pattern
+-   order number) and for OGG, FLAC, MP3_MAD, and MODPLUG music (set
+-   position in seconds), at the moment.
++   order number) and for OGG, FLAC, MP3_MAD, MP3_MPG and MODPLUG music
++   (set position in seconds), at the moment.
+ */
+ extern DECLSPEC int SDLCALL Mix_SetMusicPosition(double position);
+ 
+diff --git a/configure b/configure
+index 7c45b7f..b5a367a 100755
+--- a/configure
++++ b/configure
+@@ -919,6 +919,7 @@ with_smpeg_prefix
+ with_smpeg_exec_prefix
+ enable_smpegtest
+ enable_music_mp3_mad_gpl
++enable_music_mp3_mpg123
+ '
+       ac_precious_vars='build_alias
+ host_alias
+@@ -1589,6 +1590,8 @@ Optional Features:
+   --disable-smpegtest     Do not try to compile and run a test SMPEG program
+   --enable-music-mp3-mad-gpl
+                           enable MP3 music via libmad GPL code [[default=no]]
++  --enable-music-mp3-mpg123
++                          enable MP3 music via libmpg123 [[default=no]]
+ 
+ Optional Packages:
+   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+@@ -2439,9 +2442,9 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
+ #
+ MAJOR_VERSION=2
+ MINOR_VERSION=0
+-MICRO_VERSION=1
+-INTERFACE_AGE=1
+-BINARY_AGE=1
++MICRO_VERSION=2
++INTERFACE_AGE=2
++BINARY_AGE=2
+ VERSION=$MAJOR_VERSION.$MINOR_VERSION.$MICRO_VERSION
+ 
+ 
+@@ -3921,13 +3924,13 @@ if ${lt_cv_nm_interface+:} false; then :
+ else
+   lt_cv_nm_interface="BSD nm"
+   echo "int some_variable = 0;" > conftest.$ac_ext
+-  (eval echo "\"\$as_me:3924: $ac_compile\"" >&5)
++  (eval echo "\"\$as_me:3927: $ac_compile\"" >&5)
+   (eval "$ac_compile" 2>conftest.err)
+   cat conftest.err >&5
+-  (eval echo "\"\$as_me:3927: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
++  (eval echo "\"\$as_me:3930: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
+   cat conftest.err >&5
+-  (eval echo "\"\$as_me:3930: output\"" >&5)
++  (eval echo "\"\$as_me:3933: output\"" >&5)
+   cat conftest.out >&5
+   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
+     lt_cv_nm_interface="MS dumpbin"
+@@ -5138,7 +5141,7 @@ ia64-*-hpux*)
+   ;;
+ *-*-irix6*)
+   # Find out which ABI we are using.
+-  echo '#line 5141 "configure"' > conftest.$ac_ext
++  echo '#line 5144 "configure"' > conftest.$ac_ext
+   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
+   (eval $ac_compile) 2>&5
+   ac_status=$?
+@@ -6965,11 +6968,11 @@ else
+    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
+    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
+    -e 's:$: $lt_compiler_flag:'`
+-   (eval echo "\"\$as_me:6968: $lt_compile\"" >&5)
++   (eval echo "\"\$as_me:6971: $lt_compile\"" >&5)
+    (eval "$lt_compile" 2>conftest.err)
+    ac_status=$?
+    cat conftest.err >&5
+-   echo "$as_me:6972: \$? = $ac_status" >&5
++   echo "$as_me:6975: \$? = $ac_status" >&5
+    if (exit $ac_status) && test -s "$ac_outfile"; then
+      # The compiler can only warn and ignore the option if not recognized
+      # So say no if there are warnings other than the usual output.
+@@ -7304,11 +7307,11 @@ else
+    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
+    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
+    -e 's:$: $lt_compiler_flag:'`
+-   (eval echo "\"\$as_me:7307: $lt_compile\"" >&5)
++   (eval echo "\"\$as_me:7310: $lt_compile\"" >&5)
+    (eval "$lt_compile" 2>conftest.err)
+    ac_status=$?
+    cat conftest.err >&5
+-   echo "$as_me:7311: \$? = $ac_status" >&5
++   echo "$as_me:7314: \$? = $ac_status" >&5
+    if (exit $ac_status) && test -s "$ac_outfile"; then
+      # The compiler can only warn and ignore the option if not recognized
+      # So say no if there are warnings other than the usual output.
+@@ -7409,11 +7412,11 @@ else
+    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
+    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
+    -e 's:$: $lt_compiler_flag:'`
+-   (eval echo "\"\$as_me:7412: $lt_compile\"" >&5)
++   (eval echo "\"\$as_me:7415: $lt_compile\"" >&5)
+    (eval "$lt_compile" 2>out/conftest.err)
+    ac_status=$?
+    cat out/conftest.err >&5
+-   echo "$as_me:7416: \$? = $ac_status" >&5
++   echo "$as_me:7419: \$? = $ac_status" >&5
+    if (exit $ac_status) && test -s out/conftest2.$ac_objext
+    then
+      # The compiler can only warn and ignore the option if not recognized
+@@ -7464,11 +7467,11 @@ else
+    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
+    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
+    -e 's:$: $lt_compiler_flag:'`
+-   (eval echo "\"\$as_me:7467: $lt_compile\"" >&5)
++   (eval echo "\"\$as_me:7470: $lt_compile\"" >&5)
+    (eval "$lt_compile" 2>out/conftest.err)
+    ac_status=$?
+    cat out/conftest.err >&5
+-   echo "$as_me:7471: \$? = $ac_status" >&5
++   echo "$as_me:7474: \$? = $ac_status" >&5
+    if (exit $ac_status) && test -s out/conftest2.$ac_objext
+    then
+      # The compiler can only warn and ignore the option if not recognized
+@@ -9833,7 +9836,7 @@ else
+   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
+   lt_status=$lt_dlunknown
+   cat > conftest.$ac_ext <<_LT_EOF
+-#line 9836 "configure"
++#line 9839 "configure"
+ #include "confdefs.h"
+ 
+ #if HAVE_DLFCN_H
+@@ -9929,7 +9932,7 @@ else
+   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
+   lt_status=$lt_dlunknown
+   cat > conftest.$ac_ext <<_LT_EOF
+-#line 9932 "configure"
++#line 9935 "configure"
+ #include "confdefs.h"
+ 
+ #if HAVE_DLFCN_H
+@@ -12910,7 +12913,52 @@ $as_echo "$as_me: WARNING: *** Unable to find MAD library (http://www.underbit.c
+     fi
+ fi
+ 
+-if test x$have_smpeg != xyes -a x$have_libmad != xyes; then
++# Check whether --enable-music-mp3-mpg123 was given.
++if test "${enable_music_mp3_mpg123+set}" = set; then :
++  enableval=$enable_music_mp3_mpg123;
++else
++  enable_music_mp3_mpg123=no
++fi
++
++if test x$enable_music_mp3 = xyes -a x$enable_music_mp3_mpg123 = xyes; then
++    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libmpg123 headers" >&5
++$as_echo_n "checking for libmpg123 headers... " >&6; }
++    have_libmpg123=no
++    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
++/* end confdefs.h.  */
++
++     #include "mpg123.h"
++
++int
++main ()
++{
++
++
++  ;
++  return 0;
++}
++_ACEOF
++if ac_fn_c_try_compile "$LINENO"; then :
++
++    have_libmpg123=yes
++
++fi
++rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
++    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_libmpg123" >&5
++$as_echo "$have_libmpg123" >&6; }
++    if test x$have_libmpg123 = xyes; then
++        SOURCES="$SOURCES $srcdir/music_mpg.c"
++        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMP3_MPG_MUSIC"
++        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmpg123"
++    else
++        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** Unable to find mpg123 library (https://www.mpg123.de)" >&5
++$as_echo "$as_me: WARNING: *** Unable to find mpg123 library (https://www.mpg123.de)" >&2;}
++    fi
++fi
++
++if test x$have_smpeg = xyes -o x$have_libmad = xyes -o x$have_libmpg123; then
++    SOURCES="$SOURCES $srcdir/*_mp3.c"
++else
+     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: MP3 support disabled" >&5
+ $as_echo "$as_me: WARNING: MP3 support disabled" >&2;}
+ fi
+diff --git a/configure.in b/configure.in
+index 77dc3fe..774f9c5 100644
+--- a/configure.in
++++ b/configure.in
+@@ -14,9 +14,9 @@ dnl Set various version strings - taken gratefully from the GTk sources
+ #
+ MAJOR_VERSION=2
+ MINOR_VERSION=0
+-MICRO_VERSION=1
+-INTERFACE_AGE=1
+-BINARY_AGE=1
++MICRO_VERSION=2
++INTERFACE_AGE=2
++BINARY_AGE=2
+ VERSION=$MAJOR_VERSION.$MINOR_VERSION.$MICRO_VERSION
+ 
+ AC_SUBST(MAJOR_VERSION)
+@@ -649,7 +649,31 @@ if test x$enable_music_mp3 = xyes -a x$enable_music_mp3_mad_gpl = xyes; then
+     fi
+ fi
+ 
+-if test x$have_smpeg != xyes -a x$have_libmad != xyes; then
++AC_ARG_ENABLE(music-mp3-mpg123,
++AC_HELP_STRING([--enable-music-mp3-mpg123], [enable MP3 music via libmpg123 [[default=no]]]),
++                  [], [enable_music_mp3_mpg123=no])
++if test x$enable_music_mp3 = xyes -a x$enable_music_mp3_mpg123 = xyes; then
++    AC_MSG_CHECKING(for libmpg123 headers)
++    have_libmpg123=no
++    AC_TRY_COMPILE([
++     #include "mpg123.h"
++    ],[
++    ],[
++    have_libmpg123=yes
++    ])
++    AC_MSG_RESULT($have_libmpg123)
++    if test x$have_libmpg123 = xyes; then
++        SOURCES="$SOURCES $srcdir/music_mpg.c"
++        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMP3_MPG_MUSIC"
++        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmpg123"
++    else
++        AC_MSG_WARN([*** Unable to find mpg123 library (https://www.mpg123.de)])
++    fi
++fi
++
++if test x$have_smpeg = xyes -o x$have_libmad = xyes -o x$have_libmpg123; then
++    SOURCES="$SOURCES $srcdir/*_mp3.c"
++else
+     AC_MSG_WARN([MP3 support disabled])
+ fi
+ 
+diff --git a/dynamic_mp3.c b/dynamic_mp3.c
+index 1f00920..f24c14a 100644
+--- a/dynamic_mp3.c
++++ b/dynamic_mp3.c
+@@ -178,4 +178,23 @@ void Mix_QuitMP3()
+ }
+ #endif /* MP3_DYNAMIC */
+ 
++#elif defined(MP3_MPG_MUSIC)
++#include "mpg123.h"
++
++int Mix_InitMP3()
++{
++    int result;
++
++    result = mpg123_init();
++    if (result != MPG123_OK) {
++        return 1;
++    }
++
++    return 0;
++}
++
++void Mix_QuitMP3() {
++    mpg123_exit();
++}
++
+ #endif /* MP3_MUSIC */
+diff --git a/dynamic_mp3.h b/dynamic_mp3.h
+index 3586b70..70fd157 100644
+--- a/dynamic_mp3.h
++++ b/dynamic_mp3.h
+@@ -41,6 +41,10 @@ typedef struct {
+ 
+ extern smpeg_loader smpeg;
+ 
++#elif defined(MP3_MPG_MUSIC)
++
++#include "mpg123.h"
++
+ #endif /* MUSIC_MP3 */
+ 
+ extern int Mix_InitMP3();
+diff --git a/load_mp3.c b/load_mp3.c
+index 40e031c..b33e208 100644
+--- a/load_mp3.c
++++ b/load_mp3.c
+@@ -23,7 +23,7 @@
+ 
+ /* $Id$ */
+ 
+-#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC)
++#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC) || defined(MP3_MPG_MUSIC)
+ 
+ #include "SDL_mixer.h"
+ 
+@@ -33,6 +33,8 @@
+ #include "dynamic_mp3.h"
+ #elif defined(MP3_MAD_MUSIC)
+ #include "music_mad.h"
++#elif defined(MP3_MPG_MUSIC)
++#include "music_mpg.h"
+ #endif
+ 
+ SDL_AudioSpec *Mix_LoadMP3_RW(SDL_RWops *src, int freesrc, SDL_AudioSpec *spec, Uint8 **audio_buf, Uint32 *audio_len)
+@@ -44,6 +46,8 @@ SDL_AudioSpec *Mix_LoadMP3_RW(SDL_RWops *src, int freesrc, SDL_AudioSpec *spec,
+ 	SMPEG_Info info;
+ #elif defined(MP3_MAD_MUSIC)
+ 	mad_data *mp3_mad;
++#elif defined(MP3_MPG_MUSIC)
++	mpg_data *mp3_mpg;
+ #endif
+ 	long samplesize;
+ 	int read_len;
+@@ -75,6 +79,9 @@ SDL_AudioSpec *Mix_LoadMP3_RW(SDL_RWops *src, int freesrc, SDL_AudioSpec *spec,
+ #elif defined(MP3_MAD_MUSIC)
+         mp3_mad = mad_openFileRW(src, spec, freesrc);
+ 		err = (mp3_mad == NULL);
++#elif defined(MP3_MPG_MUSIC)
++		mp3_mpg = mpg_new_rw(src, spec, freesrc);
++        err = (mp3_mpg == NULL);
+ #endif
+ 	}
+ 
+@@ -116,6 +123,18 @@ SDL_AudioSpec *Mix_LoadMP3_RW(SDL_RWops *src, int freesrc, SDL_AudioSpec *spec,
+ 
+ 		mad_stop(mp3_mad);
+ 
++#elif defined(MP3_MPG_MUSIC)
++
++		mpg_start(mp3_mpg);
++
++		/* read once for audio length */
++		while ((read_len = mpg_get_samples(mp3_mpg, *audio_buf, chunk_len)) > 0)
++		{
++			*audio_len += read_len;
++		}
++
++		mpg_stop(mp3_mpg);
++
+ #endif
+ 
+ 		err = (read_len < 0);
+@@ -146,6 +165,11 @@ SDL_AudioSpec *Mix_LoadMP3_RW(SDL_RWops *src, int freesrc, SDL_AudioSpec *spec,
+ 			mad_start(mp3_mad);
+ 			err = (*audio_len != mad_getSamples(mp3_mad, *audio_buf, *audio_len));
+ 			mad_stop(mp3_mad);
++#elif defined(MP3_MPG_MUSIC)
++			mpg_seek(mp3_mpg, 0);
++			mpg_start(mp3_mpg);
++			err = (*audio_len != mpg_get_samples(mp3_mpg, *audio_buf, *audio_len));
++			mpg_stop(mp3_mpg);
+ #endif
+ 		}
+ 	}
+@@ -171,6 +195,13 @@ SDL_AudioSpec *Mix_LoadMP3_RW(SDL_RWops *src, int freesrc, SDL_AudioSpec *spec,
+ 		/* Deleting the MP3 closed the source if desired */
+ 		freesrc = SDL_FALSE;
+ 	}
++#elif defined(MP3_MPG_MUSIC)
++	if (mp3_mpg)
++	{
++		mpg_delete(mp3_mpg); mp3_mpg = NULL;
++		/* Deleting the MP3 closed the source if desired */
++		freesrc = SDL_FALSE;
++	}
+ #endif
+ 
+ 	if (freesrc)
+diff --git a/load_mp3.h b/load_mp3.h
+index 8a8ea56..9673d17 100644
+--- a/load_mp3.h
++++ b/load_mp3.h
+@@ -23,7 +23,7 @@
+ 
+ /* $Id$ */
+ 
+-#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC)
++#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC) || defined(MP3_MPG_MUSIC)
+ /* Don't call this directly; use Mix_LoadWAV_RW() for now. */
+ SDL_AudioSpec *Mix_LoadMP3_RW (SDL_RWops *src, int freesrc,
+         SDL_AudioSpec *spec, Uint8 **audio_buf, Uint32 *audio_len);
+diff --git a/mixer.c b/mixer.c
+index bebb6c0..c4b4a37 100644
+--- a/mixer.c
++++ b/mixer.c
+@@ -188,7 +188,7 @@ int Mix_Init(int flags)
+ #endif
+     }
+     if (flags & MIX_INIT_MP3) {
+-#ifdef MP3_MUSIC
++#if defined(MP3_MUSIC) || defined(MP3_MPG_MUSIC)
+         if ((initialized & MIX_INIT_MP3) || Mix_InitMP3() == 0) {
+             result |= MIX_INIT_MP3;
+         }
+@@ -234,7 +234,7 @@ void Mix_Quit()
+         Mix_QuitMOD();
+     }
+ #endif
+-#ifdef MP3_MUSIC
++#if defined(MP3_MUSIC) || defined(MP3_MPG_MUSIC)
+     if (initialized & MIX_INIT_MP3) {
+         Mix_QuitMP3();
+     }
+@@ -497,7 +497,7 @@ int Mix_OpenAudio(int frequency, Uint16 format, int nchannels, int chunksize)
+ #ifdef FLAC_MUSIC
+     add_chunk_decoder("FLAC");
+ #endif
+-#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC)
++#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC) || defined(MP3_MPG_MUSIC)
+     add_chunk_decoder("MP3");
+ #endif
+ 
+@@ -648,7 +648,7 @@ Mix_Chunk *Mix_LoadWAV_RW(SDL_RWops *src, int freesrc)
+                     (Uint8 **)&chunk->abuf, &chunk->alen);
+             break;
+         default:
+-#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC)
++#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC) || defined(MP3_MPG_MUSIC)
+ 			if (detect_mp3((Uint8*)&magic))
+ 			{
+ 				/* note: send a copy of the mixer spec */
+diff --git a/music.c b/music.c
+index bbaf4a3..0bae241 100644
+--- a/music.c
++++ b/music.c
+@@ -63,11 +63,14 @@
+ #ifdef MP3_MAD_MUSIC
+ #include "music_mad.h"
+ #endif
++#ifdef MP3_MPG_MUSIC
++#include "music_mpg.h"
++#endif
+ #ifdef FLAC_MUSIC
+ #include "music_flac.h"
+ #endif
+ 
+-#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC)
++#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC) || defined(MP3_MPG_MUSIC)
+ static SDL_AudioSpec used_mixer;
+ #endif
+ 
+@@ -114,6 +117,9 @@ struct _Mix_Music {
+ #ifdef MP3_MAD_MUSIC
+         mad_data *mp3_mad;
+ #endif
++#ifdef MP3_MPG_MUSIC
++        mpg_data *mp3_mpg;
++#endif
+ #ifdef FLAC_MUSIC
+         FLAC_music *flac;
+ #endif
+@@ -332,6 +338,11 @@ void music_mixer(void *udata, Uint8 *stream, int len)
+                 left = mad_getSamples(music_playing->data.mp3_mad, stream, len);
+                 break;
+ #endif
++#ifdef MP3_MPG_MUSIC
++            case MUS_MP3_MPG:
++                left = mpg_get_samples(music_playing->data.mp3_mpg, stream, len);
++                break;
++#endif
+             default:
+                 /* Unknown music type?? */
+                 break;
+@@ -411,7 +422,7 @@ int open_music(SDL_AudioSpec *mixer)
+         add_music_decoder("FLAC");
+     }
+ #endif
+-#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC)
++#if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC) || defined(MP3_MPG_MUSIC)
+     /* Keep a copy of the mixer */
+     used_mixer = *mixer;
+     add_music_decoder("MP3");
+@@ -677,6 +688,16 @@ Mix_Music *Mix_LoadMUSType_RW(SDL_RWops *src, Mix_MusicType type, int freesrc)
+             Mix_SetError("Could not initialize MPEG stream.");
+         }
+         break;
++#elif defined(MP3_MPG_MUSIC)
++    case MUS_MP3:
++        music->type = MUS_MP3_MPG;
++        music->data.mp3_mpg = mpg_new_rw(src, &used_mixer, freesrc);
++        if (music->data.mp3_mpg) {
++            music->error = 0;
++        } else {
++            Mix_SetError("Could not initialize MPEG stream.");
++        }
++        break;
+ #endif
+ #ifdef MID_MUSIC
+     case MUS_MID:
+@@ -841,6 +862,11 @@ void Mix_FreeMusic(Mix_Music *music)
+                 mad_closeFile(music->data.mp3_mad);
+                 break;
+ #endif
++#ifdef MP3_MPG_MUSIC
++            case MUS_MP3_MPG:
++                mpg_delete(music->data.mp3_mpg);
++                break;
++#endif
+             default:
+                 /* Unknown music type?? */
+                 break;
+@@ -968,6 +994,11 @@ static int music_internal_play(Mix_Music *music, double position)
+         mad_start(music->data.mp3_mad);
+         break;
+ #endif
++#ifdef MP3_MPG_MUSIC
++        case MUS_MP3_MPG:
++        mpg_start(music->data.mp3_mpg);
++        break;
++#endif
+         default:
+         Mix_SetError("Can't play unknown music type");
+         retval = -1;
+@@ -1085,6 +1116,11 @@ int music_internal_position(double position)
+         mad_seek(music_playing->data.mp3_mad, position);
+         break;
+ #endif
++#ifdef MP3_MPG_MUSIC
++        case MUS_MP3_MPG:
++        mpg_seek(music_playing->data.mp3_mpg, position);
++        break;
++#endif
+         default:
+         /* TODO: Implement this for other music backends */
+         retval = -1;
+@@ -1187,6 +1223,11 @@ static void music_internal_volume(int volume)
+         mad_setVolume(music_playing->data.mp3_mad, volume);
+         break;
+ #endif
++#ifdef MP3_MPG_MUSIC
++        case MUS_MP3_MPG:
++        mpg_volume(music_playing->data.mp3_mpg, volume);
++        break;
++#endif
+         default:
+         /* Unknown music type?? */
+         break;
+@@ -1278,6 +1319,11 @@ static void music_internal_halt(void)
+         mad_stop(music_playing->data.mp3_mad);
+         break;
+ #endif
++#ifdef MP3_MPG_MUSIC
++        case MUS_MP3_MPG:
++        mpg_stop(music_playing->data.mp3_mpg);
++        break;
++#endif
+         default:
+         /* Unknown music type?? */
+         return;
+@@ -1466,6 +1512,13 @@ static int music_internal_playing()
+         }
+         break;
+ #endif
++#ifdef MP3_MPG_MUSIC
++        case MUS_MP3_MPG:
++        if (!mpg_playing(music_playing->data.mp3_mpg)) {
++            playing = 0;
++        }
++        break;
++#endif
+         default:
+         playing = 0;
+         break;
+diff --git a/music_mpg.c b/music_mpg.c
+new file mode 100644
+index 0000000..ca7fffa
+--- /dev/null
++++ b/music_mpg.c
+@@ -0,0 +1,396 @@
++/*
++  SDL_mixer:    An audio mixer library based on the SDL library
++  Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
++
++  This software is provided 'as-is', without any express or implied
++  warranty.    In no event will the authors be held liable for any damages
++  arising from the use of this software.
++
++  Permission is granted to anyone to use this software for any purpose,
++  including commercial applications, and to alter it and redistribute it
++  freely, subject to the following restrictions:
++
++  1. The origin of this software must not be misrepresented; you must not
++       claim that you wrote the original software. If you use this software
++       in a product, an acknowledgment in the product documentation would be
++       appreciated but is not required.
++  2. Altered source versions must be plainly marked as such, and must not be
++       misrepresented as being the original software.
++  3. This notice may not be removed or altered from any source distribution.
++*/
++
++#ifdef MP3_MPG_MUSIC
++
++#include "SDL_mixer.h"
++#include "music_mpg.h"
++
++static
++int
++snd_format_to_mpg123(uint16_t sdl_fmt)
++{
++    switch (sdl_fmt)
++    {
++        case AUDIO_U8:     return MPG123_ENC_UNSIGNED_8;
++        case AUDIO_U16SYS: return MPG123_ENC_UNSIGNED_16;
++        case AUDIO_S8:     return MPG123_ENC_SIGNED_8;
++        case AUDIO_S16SYS: return MPG123_ENC_SIGNED_16;
++        case AUDIO_S32SYS: return MPG123_ENC_SIGNED_32;
++    }
++
++    return -1;
++}
++
++static
++Uint16
++mpg123_format_to_sdl(int fmt)
++{
++    switch (fmt)
++    {
++        case MPG123_ENC_UNSIGNED_8:  return AUDIO_U8;
++        case MPG123_ENC_UNSIGNED_16: return AUDIO_U16SYS;
++        case MPG123_ENC_SIGNED_8:    return AUDIO_S8;
++        case MPG123_ENC_SIGNED_16:   return AUDIO_S16SYS;
++        case MPG123_ENC_SIGNED_32:   return AUDIO_S32SYS;
++    }
++
++    return -1;
++}
++
++static
++char const*
++mpg123_format_str(int fmt)
++{
++    switch (fmt)
++    {
++#define f(x) case x: return #x;
++        f(MPG123_ENC_UNSIGNED_8)
++        f(MPG123_ENC_UNSIGNED_16)
++        f(MPG123_ENC_SIGNED_8)
++        f(MPG123_ENC_SIGNED_16)
++        f(MPG123_ENC_SIGNED_32)
++#undef f
++    }
++
++    return "unknown";
++}
++
++static
++char const*
++mpg_err(mpg123_handle* mpg, int code)
++{
++    char const* err = "unknown error";
++
++    if (mpg && code == MPG123_ERR) {
++        err = mpg123_strerror(mpg);
++    } else {
++        err = mpg123_plain_strerror(code);
++    }
++
++    return err;
++}
++
++/* we're gonna override mpg123's I/O with these wrappers for RWops */
++static
++ssize_t rwops_read(void* p, void* dst, size_t n) {
++    return (ssize_t)SDL_RWread((SDL_RWops*)p, dst, 1, n);
++}
++
++static
++off_t rwops_seek(void* p, off_t offset, int whence) {
++    return (off_t)SDL_RWseek((SDL_RWops*)p, (Sint64)offset, whence);
++}
++
++static
++void rwops_cleanup(void* p) {
++    (void)p;
++    /* do nothing, we will free the file later */
++}
++
++static int getsome(mpg_data* m);
++
++mpg_data*
++mpg_new_rw(SDL_RWops *src, SDL_AudioSpec* mixer, int freesrc)
++{
++    mpg_data* m;
++    int result;
++    int fmt;
++
++    if (!Mix_Init(MIX_INIT_MP3)) {
++        return(NULL);
++    }
++
++    m = (mpg_data*)SDL_malloc(sizeof(mpg_data));
++    if (!m) {
++        return 0;
++    }
++
++    SDL_memset(m, 0, sizeof(mpg_data));
++
++    m->src = src;
++    m->freesrc = freesrc;
++
++    m->handle = mpg123_new(0, &result);
++    if (result != MPG123_OK) {
++        return 0;
++    }
++
++    result = mpg123_replace_reader_handle(
++        m->handle,
++        rwops_read, rwops_seek, rwops_cleanup
++    );
++    if (result != MPG123_OK) {
++        return 0;
++    }
++
++    result = mpg123_format_none(m->handle);
++    if (result != MPG123_OK) {
++        return 0;
++    }
++
++    fmt = snd_format_to_mpg123(mixer->format);
++    if (fmt == -1) {
++        return 0;
++    }
++
++    result =  mpg123_format(m->handle, mixer->freq, mixer->channels, fmt);
++    if (result != MPG123_OK) {
++        return 0;
++    }
++
++    result = mpg123_open_handle(m->handle, m->src);
++    if (result != MPG123_OK) {
++        return 0;
++    }
++
++    m->volume = MIX_MAX_VOLUME;
++    m->mixer = *mixer;
++
++    /* hacky: read until we can figure out the format then rewind */
++    while (!m->gotformat)
++    {
++        if (!getsome(m)) {
++            return 0;
++        }
++    }
++
++    /* rewind */
++    mpg123_seek(m->handle, 0, SEEK_SET);
++
++    m->len_available = 0;
++    m->snd_available = m->cvt.buf;
++
++    return m;
++}
++
++void
++mpg_delete(mpg_data* m)
++{
++    if (!m) {
++        return;
++    }
++
++    if (m->freesrc) {
++        SDL_RWclose(m->src);
++    }
++
++    if (m->cvt.buf) {
++        SDL_free(m->cvt.buf);
++    }
++
++    mpg123_close(m->handle);
++    mpg123_delete(m->handle);
++    SDL_free(m);
++}
++
++void
++mpg_start(mpg_data* m) {
++    m->playing = 1;
++}
++
++void
++mpg_stop(mpg_data* m) {
++    m->playing = 0;
++}
++
++int
++mpg_playing(mpg_data* m) {
++    return m->playing;
++}
++
++/*
++    updates the convert struct and buffer to match the format queried from
++    mpg123.
++*/
++static
++int
++update_format(mpg_data* m)
++{
++    int code;
++    long rate;
++    int channels, encoding;
++    Uint16 sdlfmt;
++    size_t bufsize;
++
++    m->gotformat = 1;
++
++    code =
++        mpg123_getformat(
++            m->handle,
++            &rate, &channels, &encoding
++        );
++
++    if (code != MPG123_OK) {
++        SDL_SetError("mpg123_getformat: %s", mpg_err(m->handle, code));
++        return 0;
++    }
++
++    sdlfmt = mpg123_format_to_sdl(encoding);
++    if (sdlfmt == (Uint16)-1)
++    {
++        SDL_SetError(
++            "Format %s is not supported by SDL",
++            mpg123_format_str(encoding)
++        );
++        return 0;
++    }
++
++    SDL_BuildAudioCVT(
++        &m->cvt,
++        sdlfmt, channels, rate,
++        m->mixer.format,
++        m->mixer.channels,
++        m->mixer.freq
++    );
++
++    if (m->cvt.buf) {
++        SDL_free(m->cvt.buf);
++    }
++
++    bufsize = sizeof(m->buf) * m->cvt.len_mult;
++    m->cvt.buf = SDL_malloc(bufsize);
++
++    if (!m->cvt.buf)
++    {
++        SDL_SetError("Out of memory");
++        mpg_stop(m);
++        return 0;
++    }
++
++    return 1;
++}
++
++/* read some mp3 stream data and convert it for output */
++static
++int
++getsome(mpg_data* m)
++{
++    int code;
++    size_t len;
++    Uint8* data = m->buf;
++    size_t cbdata = sizeof(m->buf);
++    SDL_AudioCVT* cvt = &m->cvt;
++
++    do
++    {
++        code = mpg123_read(m->handle, data, sizeof(data), &len);
++        switch (code)
++        {
++            case MPG123_NEW_FORMAT:
++                if (!update_format(m)) {
++                    return 0;
++                }
++                break;
++
++            case MPG123_DONE:
++                mpg_stop(m);
++            case MPG123_OK:
++                break;
++
++            default:
++                SDL_SetError("mpg123_read: %s", mpg_err(m->handle, code));
++                return 0;
++        }
++    }
++    while (len && code != MPG123_OK);
++
++    SDL_memcpy(cvt->buf, data, cbdata);
++
++    if (cvt->needed) {
++        /* we need to convert the audio to SDL's format */
++        cvt->len = len;
++        SDL_ConvertAudio(cvt);
++    }
++
++    else {
++        /* no conversion needed, just copy */
++        cvt->len_cvt = len;
++    }
++
++    m->len_available = cvt->len_cvt;
++    m->snd_available = cvt->buf;
++
++    return 1;
++}
++
++int
++mpg_get_samples(mpg_data* m, Uint8 *stream, int len)
++{
++    int mixable;
++
++    while (len > 0 && m->playing)
++    {
++        if (!m->len_available)
++        {
++            if (!getsome(m)) {
++                m->playing = 0;
++                return len;
++            }
++        }
++
++        mixable = len;
++
++        if (mixable > m->len_available) {
++            mixable = m->len_available;
++        }
++
++        if (m->volume == MIX_MAX_VOLUME) {
++            SDL_memcpy(stream, m->snd_available, mixable);
++        }
++
++        else
++        {
++            SDL_MixAudioFormat(
++                stream,
++                m->snd_available,
++                m->mixer.format,
++                mixable,
++                m->volume
++            );
++        }
++
++        m->len_available -= mixable;
++        m->snd_available += mixable;
++        len -= mixable;
++        stream += mixable;
++    }
++
++    return len;
++}
++
++void
++mpg_seek(mpg_data* m, double secs)
++{
++    off_t offset = m->mixer.freq * secs;
++
++    if ((offset = mpg123_seek(m->handle, offset, SEEK_SET)) < 0) {
++        SDL_SetError("mpg123_seek: %s", mpg_err(m->handle, -offset));
++    }
++}
++
++void
++mpg_volume(mpg_data* m, int volume) {
++    m->volume = volume;
++}
++
++
++#endif    /* MP3_MPG_MUSIC */
+diff --git a/music_mpg.h b/music_mpg.h
+new file mode 100644
+index 0000000..1599478
+--- /dev/null
++++ b/music_mpg.h
+@@ -0,0 +1,58 @@
++/*
++    SDL_mixer:    An audio mixer library based on the SDL library
++    Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
++
++    This software is provided 'as-is', without any express or implied
++    warranty.    In no event will the authors be held liable for any damages
++    arising from the use of this software.
++
++    Permission is granted to anyone to use this software for any purpose,
++    including commercial applications, and to alter it and redistribute it
++    freely, subject to the following restrictions:
++
++    1. The origin of this software must not be misrepresented; you must not
++         claim that you wrote the original software. If you use this software
++         in a product, an acknowledgment in the product documentation would be
++         appreciated but is not required.
++    2. Altered source versions must be plainly marked as such, and must not be
++         misrepresented as being the original software.
++    3. This notice may not be removed or altered from any source distribution.
++*/
++
++#ifdef MP3_MPG_MUSIC
++
++#include <mpg123.h>
++
++typedef struct
++{
++    SDL_RWops* src;
++    int freesrc;
++
++    SDL_AudioSpec mixer;
++
++    int playing;
++    int volume;
++
++    mpg123_handle* handle;
++
++    int gotformat;
++    SDL_AudioCVT cvt;
++    Uint8 buf[8192];
++    size_t len_available;
++    Uint8* snd_available;
++}
++mpg_data;
++
++mpg_data* mpg_new_rw(SDL_RWops *src, SDL_AudioSpec* mixer, int freesrc);
++void mpg_delete(mpg_data* m);
++
++void mpg_start(mpg_data* m);
++void mpg_stop(mpg_data* m);
++int mpg_playing(mpg_data* m);
++
++int mpg_get_samples(mpg_data* m, Uint8* stream, int len);
++void mpg_seek(mpg_data* m, double seconds);
++void mpg_volume(mpg_data* m, int volume);
++
++#endif
++
+-- 
+2.13.3
+
