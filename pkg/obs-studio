@@ -1,11 +1,12 @@
-[mirrors]
-https://github.com/jp9000/obs-studio/archive/20.0.0.tar.gz
-
 [vars]
 filesize=5610317
 sha512=6eced7d373d1a0391329466cc57a79317846250f6c3f782fd473034bbc69cde0cdfec51118974a97793a92a0c665d4bb88ecf242e9f7b741d3deaff024836324
 pkgver=2
-tarball=obs-studio-20.0.0.tar.gz
+obsver=20.0.0
+tarball=obs-studio-${obsver}.tar.gz
+
+[mirrors]
+https://github.com/jp9000/obs-studio/archive/${obsver}.tar.gz
 
 [deps]
 fontconfig
@@ -49,6 +50,7 @@ cmake $xconfflags \
   -DUNIX_STRUCTURE=1 \
   -DCMAKE_INSTALL_PREFIX="$butch_prefix/" \
   -DCMAKE_VERBOSE_MAKEFILE=ON \
+  -DOBS_VERSION_OVERRIDE=$obsver \
   ..
 make -j$MAKE_THREADS VERBOSE=1
 make DESTDIR="$butch_install_dir" install
