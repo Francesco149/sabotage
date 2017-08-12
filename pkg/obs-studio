@@ -1,8 +1,8 @@
 [vars]
-filesize=5610317
-sha512=6eced7d373d1a0391329466cc57a79317846250f6c3f782fd473034bbc69cde0cdfec51118974a97793a92a0c665d4bb88ecf242e9f7b741d3deaff024836324
-pkgver=2
-obsver=20.0.0
+filesize=5610534
+sha512=891be96bbe18a2de4af8efd2eaeb54c388332ac7d93a66efcc18208af9ef2dfe3981f81ba351bdb16a93b2d66bcfef4f5277d3d8746261f0beb1f324ed9a7534
+pkgver=3
+obsver=20.0.1
 tarball=obs-studio-${obsver}.tar.gz
 
 [mirrors]
